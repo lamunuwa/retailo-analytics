@@ -3,6 +3,8 @@ uvicorn[standard]
 sqlalchemy
 alembic
 psycopg[binary]
+ultralytics
+opencv-python-headless
 pytest
 pytest-cov
 httpx

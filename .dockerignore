@@ -1,17 +1,32 @@
-.git
-.github
-.gitignore
+# Secretos y Entornos
 .env
 .env.*
-!.env.example
-**/__pycache__
-**/*.pyc
-.pytest_cache
-.mypy_cache
-.ruff_cache
+*.env
+.git/
+
+# Base de Datos y Logs Locales
+*.db
+*.sqlite3
+*.db-journal 
+*.log
+
+# Entorno Virtual y Caché de Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.py[cod]
+
+# Herramientas de Pruebas y Linter
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .coverage
-htmlcov/
-tests/
-docs/
-*.md
-README.md
+
+# Archivos locales de Docker
+postgres-data/
+pgdata/
+
+# IDEs y SO
+.vscode/
+.idea/
