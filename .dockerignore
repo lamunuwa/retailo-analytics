@@ -2,13 +2,24 @@
 .env
 .env.*
 *.env
+*.pem
+*.key
+*.p12
+*.pfx
+.secrets/
 .git/
 
 # Base de Datos y Logs Locales
 *.db
 *.sqlite3
-*.db-journal 
+*.db-journal
 *.log
+
+# Modelos y Medios de Vision Locales
+*.pt
+*.onnx
+*.mp4
+*.avi
 
 # Entorno Virtual y Caché de Python
 .venv/
@@ -22,6 +33,13 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .coverage
+htmlcov/
+
+# Archivos no necesarios para construir imagenes
+.github/
+docs/
+tests/
+*.md
 
 # Archivos locales de Docker
 postgres-data/
@@ -30,3 +48,4 @@ pgdata/
 # IDEs y SO
 .vscode/
 .idea/
+.DS_Store

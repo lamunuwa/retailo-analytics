@@ -2,14 +2,24 @@
 .env
 .env.*
 *.env
+!.env.example
 *.pem
 *.key
+*.p12
+*.pfx
+.secrets/
 
 # Base de Datos y Logs Locales
 *.db
 *.sqlite3
-*.db-journal 
+*.db-journal
 *.log
+
+# Modelos y Medios de Vision Locales
+*.pt
+*.onnx
+*.mp4
+*.avi
 
 # Entorno Virtual y Caché de Python
 .venv/
@@ -29,5 +39,3 @@ htmlcov/
 .vscode/
 .idea/
 .DS_Store
-Thumbs.db
-.aider*
