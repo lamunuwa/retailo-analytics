@@ -12,7 +12,7 @@ indent-style = "space"
 
 [tool.mypy]
 python_version = "3.12"
-files = ["app", "tests"]
+files = ["app/src", "tests", "vision/src"]
 explicit_package_bases = true
 check_untyped_defs = true
 warn_return_any = true
@@ -21,11 +21,11 @@ disallow_untyped_defs = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = "."
-addopts = "--cov=app --cov-fail-under=80"
+pythonpath = ["app"]
+addopts = "--cov=app/src --cov-fail-under=80"
 
 [tool.coverage.run]
 omit = [
-    "app/main.py",
-    "app/db.py",
+    "app/src/main.py",
+    "app/src/core/*",
 ]

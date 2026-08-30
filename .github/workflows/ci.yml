@@ -28,10 +28,10 @@ jobs:
         run: pip install -r app/requirements.txt pytest pytest-cov httpx ruff mypy
 
       - name: Run Ruff
-        run: ruff check app test
+        run: ruff check app/src tests vision/src
 
       - name: Run Mypy
-        run: mypy app test
+        run: mypy app/src tests vision/src
 
       - name: Run Pytest
         run: pytest --cov=app --cov-fail-under=80
