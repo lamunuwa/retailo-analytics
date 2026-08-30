@@ -8,6 +8,107 @@ El orden de registro es ascendente. En la parte superior estará el registro má
 
 ---
 
+## [2026-08-30] Redaccion de BACKLOG.md
+
+**Quién:** LaMunuwa | Anna Valentina
+
+**Herramienta:** ChatGPT
+
+**Qué se pidió:** Redactar el archivo BACKLOG.md con la información proporcionada. Se uso este prompt:
+
+> Acabo de crear `docs/agile/BACKLOG.md` en este archivo metere las cosas que pienso que debe llevar la API para completar el cometido que quiero para RetaiLO. Tengo aqui los endpoitns que quisiera ver, agregalos de forma profesional, estructurada y explicada al documento.
+>
+> - Stores
+>   - CRUD completo para registrar tiendas nuevas: estructura minima recomendada:
+>     - POST /stores
+>     - GET /stores
+>     - GET /stores/{store\_id}
+>     - PUT o PATCH /stores/{store\_id}
+>     - DELETE /stores/{store\_id}
+>
+> - Body: posiblemente solo el nombre es necesario, agreguenle lo que crean es necesario.
+>
+> - Cameras
+>
+>   - CRUD completo para registrar camaras dentro de una tienda preregistrada: estructura minima recomendada:
+>
+>     - POST /stores/{store\_id}/cameras
+>     - GET /stores/{store\_id}/cameras
+>     - GET /cameras/{camera\_id}
+>     - PUT o PATCH /cameras/{camera\_id}
+>     - DELETE /cameras/{camera\_id}
+> - Body:
+>
+> ```json
+> {
+>   "name": "Cámara principal",
+>   "source_type": "demo_video"
+> }
+> ```
+>
+> - Tipos: demo\_video
+>
+> - Zones:
+>   - CRUD completo para registrar zonas por medio de puntos especificos, se sacan usando una interfaz interactiva: estructura minima recomendada:
+>
+>     - POST /cameras/{camera\_id}/zones
+>     - GET /cameras/{camera\_id}/zones
+>     - GET /zones/{zone\_id}
+>     - PUT o PATCH /zones/{zone\_id}
+>     - DELETE /zones/{zone\_id}
+>
+> - Body:
+>
+> ```json
+> {
+>   "name": "Refrigeradores",
+>   "zone_type": "product_area",
+>   "points": [
+>        {"x": 120, "y": 80},
+>        {"x": 430, "y": 85},
+>        {"x": 450, "y": 300},
+>        {"x": 110, "y": 295}
+>    ]
+> }
+> ```
+>
+> - Tipos: fridges, clean products...
+>
+> - Video\_results
+>   - De nuevo, un Append-Only que sirve solo para la demostracion, no para producto real, muestra el resultado de una session, aqui no tengo una estructura minima recomendada, pero posiblemente contenga un resume de frames procesados, personas detectadas, tiempo transcurrido, metricas por zona, etc.
+>
+> - Analytics
+>   - Get-Only, este si es producto real: estructura minima recomendada:
+>     - GET /stores/{store\_id}/analytics/summary
+>     - GET /stores/{store\_id}/analytics/traffic
+>     - GET /stores/{store\_id}/analytics/insights
+>
+> - Body recomendado en insigts:
+>
+> ```json
+> {
+>   "type": "HIGH_TRAFFIC_LOW_SALES",
+>   "zone_id": "zone_001",
+>   "zone_name": "Fridges",
+>   "message": "La zona Refrigeradores concentra 42% de las visitas, pero los productos ubicados en esa zona representan solo 18% de las ventas.",
+>   "suggestion": "Revisar disponibilidad, precio, promociones o acomodo de productos."
+> }
+>
+> ```
+>
+> - Recommendations
+>   - Esta es una opcional si se ve util, puede ir dentro de Analytics, pero podria concentrar una forma de registro automatico por cada session analizada.
+>
+> Para simular las ventas deberia haber como minimo un endpoint mas, como este es solo demo y no tiene literalmente nada que ver con el producto, dejo completamente a consideracion del desarrollador la forma de implementarlo, solo no debe ser muy complejo ni llevar mas del 10% del tiempo de desarrollo. Lo mismo pasa para un posible dashboard frontend, este si es 100% opcional dependiendo de la carga de trabajo de los desarrolladores de la API.
+>
+>Por la parte del desarrollo de la vision artificial, las peticiones son mas simples, literalmente la camara debe poder correr ligero, poder correr en CUDA, poder detectar y contar, poder correr en videos, poder mandar informacion a la API, es decir es mas sencillo, el desarrollo de la inteligencia de vision es mas orientado a que haga esto bien mas que a cuantas funcionalidades tiene, igual arreglalo profesionalmente, recuerda que es un trabajo paralelo.
+
+**Qué se generó / propuso:** Redacto en forma de tablas los endpoints que mencioné para ser legibles, y mantener los feats por una escala de P0 a P2, donde P0 son los más importantes. Con esto genero la redacción. Sin embargo, ya nada más le cambié al archivo las escalas por unas MoSCoW, sus iniciales, y retiré algunos textos que notaba innecesarios, al final agregue una seccion para User Stories y una plantilla recomendada.
+
+**Qué se aceptó y qué se rechazó, y por qué:** N/A
+
+**Validación:** Lectura del texto generado.
+
 ## [2026-08-29] Revision del repositorio
 
 **Quién:** LaMunuwa | Anna Valentina
@@ -33,5 +134,3 @@ El orden de registro es ascendente. En la parte superior estará el registro má
 **Validación:** Revisé archivo por archivo; en los `Dockerfiles` y en el `docker-compose.yml` me parece que hizo un excelente trabajo, es legible y cumple con lo que mencionaba; lo mismo pasa con los `requirements.txt` aunque aquí le faltaron algunas librerías como NumPy, que yo uso para trabajar en visión artificial. Intentaré trabajar solo con las que puso, esperando que sea un flujo más eficiente.
 
 El único lugar donde podría argumentar que falló fue en `.dockerignore` porque no puso ningún tipo de orden, solo escribió cosas; aproveché eso para borrarlo y copiar y pegar lo que tenía en SensorHub.
-
----

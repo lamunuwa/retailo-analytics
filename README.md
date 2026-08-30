@@ -7,3 +7,39 @@ A diferencia de una cámara de seguridad tradicional, que normalmente se usa de 
 El sistema no identifica clientes, no utiliza reconocimiento facial y no busca saber qué compró una persona específica. Su enfoque es analizar patrones agregados por zona y horario. Por ejemplo, puede detectar que la zona de bebidas recibió una alta cantidad de visitas durante la tarde, pero que las ventas asociadas a esa categoría fueron bajas en comparación con el nivel de tráfico. A partir de esa diferencia, el sistema puede generar una recomendación como revisar disponibilidad, precio, promoción o acomodo del producto.
 
 La idea no es competir contra grandes del analisis de retail por video como lo es Getin en Mexico, si no, apoyar a las tiendas locales que tengan una infrestructura de camaras simple, haciendo que no solo grabe, si no que procecen datos y los analicen. La idea principal es que el modelo Yolo/OpenCV funcione de forma local en los dispositivos de los usarios y esa informacion sea comunicada a un servidor de la API en internet.
+
+## Arquitectura
+
+```text
+app/                         # Desarrollo de API REST
+├── src/
+│   ├── core/
+│   ├── models/
+│   ├── repos/
+│   ├── routers/
+│   ├── schemas/
+│   └── services/
+├── Dockerfile
+└── requirements.txt
+
+vision/                      # Desarrollo de vision artificial
+├── src/
+├── Dockerfile
+└── requirements.txt
+
+tests/                       # Pruebas externas de la API
+
+docs/
+├── adr/                     # Decisiones de arquitectura
+└── agile/                   # Backlog y Definition of Done
+```
+
+## Flujo de colaboración
+
+- El alcance funcional y las prioridades estan en [Backlog](docs/agile/BACKLOG.md).
+- El desarrollo de la API es en `app/src/` y mantiene las pruebas únicamente en `tests/`.
+- El desarrollo de la vision artificial es en `vision/src/`.
+- Cada feature debera llevar una o mas US, las cuales se agregaran en [Backlog](docs/agile/BACKLOG.md) y de ser posible como Issue simple.
+- Existiran 2 ramas principales, `main` y `dev`.
+- El desarrollo se hara en ramas hijas de dev llamadas `feature/<nombre>`, que despues se integran en `dev`.
+- Los cambios se integran mediante Pull Request y deben cumplir la [Definition of Done](docs/agile/DEFINITION_OF_DONE.md).
