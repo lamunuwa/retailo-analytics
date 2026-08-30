@@ -11,6 +11,8 @@ El trabajo se dividirá en dos frentes que avanzan en paralelo:
 
 Prioridades: **MH** obligatorio para la demo, **SH** deseable y **CH** opcional. Los elementos CH no deben bloquear los MH por ningún motivo.
 
+> Todo el backlog es una puesta al aire, cada desarrollador tiene la eleccion de seguir al pie de la letra dicho plan o modificarlo, cualquier modificacion estara en ADR registrada.
+
 ---
 
 ## API REST
@@ -88,12 +90,45 @@ Tipos iniciales: `product_area`, `checkout`, `entrance_exit`, `fridges` y `other
 
 > Nota: Las zonas son puntos en una cámara; en un dashboard es posible generar una interfaz interactiva; sin él se tendrán puntos preestablecidos para la DEMO.
 
+### SESSIONS (MH)
+
+| Operación | Endpoint | Propósito |
+| --- | --- | --- |
+| Crear | `POST /cameras/{camera_id}/sessions` | Registra el inicio de una sesión y devuelve su identificador. |
+
+Campos mínimos posibles:
+
+```json
+{
+  "source_type": "demo_video",
+  "started_at": "2026-07-30T12:00:00Z",
+  "settings": {
+    "frame_sample_rate": 5,
+    "confidence_threshold": 0.45
+  }
+}
+```
+
+Respuesta mínima esperada:
+
+```json
+{
+  "session_id": 1,
+  "camera_id": 1,
+  "status": "running",
+  "started_at": "2026-07-30T12:00:00Z"
+}
+```
+
+Al finalizar la API puede marcar automáticamente la sesión como
+`completed`. Si la corrida falla, se muestra un mensaje de error.
+
 ### RESULTS (MH)
 
 | Operación | Endpoint | Propósito |
 | --- | --- | --- |
-| Crear | `POST /processing-sessions/{session_id}/video-results` | Crea un resumen de la sesión. |
-| Consultar | `GET /processing-sessions/{session_id}/video-results` | Consulta resultados de la sesión. |
+| Crear | `POST /sessions/{session_id}/video-results` | Crea un resumen de la sesión. |
+| Consultar | `GET /sessions/{session_id}/video-results` | Consulta resultados de la sesión. |
 
 Campos mínimos:
 
@@ -105,17 +140,17 @@ Campos mínimos:
     "started_at": "2026-07-30T12:00:00",
     "finished_at": "2026-07-30T12:01:38",
     "zone_metrics": [
-        {"zone_id": 1},
-        {"visits": 10},
-        {"dwell_seconds": 10},
-        {"traffic_share": 10}
+        {
+            "zone_id": 1,
+            "visits": 10,
+            "dwell_seconds": 10,
+            "traffic_share": 10
+        }
     ]
 }
 ```
 
-Posteriormente de que este campo funcione en sinergia con la cámara real, es necesario agregar las compras realizadas para la DEMO.
-
-> Nota: Este endpoint en un producto real no existiria, es solo para pruebas y DEMO.
+Aquí se comunican los datos recolectados con la API; primero, al iniciar una sesión, se crea un ID para dicha sesión y, si se logra completar, obtiene los datos y genera un resumen.
 
 ### ANALYTICS (MH)
 
