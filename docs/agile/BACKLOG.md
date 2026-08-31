@@ -225,18 +225,20 @@ El orden de registro es ascendente. En la parte superior estará la US más actu
 
 ## Sprint 1
 
-## US-0X: Titulo
+### Detectar personas en video de demostración
 
-**Prioridad:** MoSCoW prioritization method
+**Prioridad:** Must Have (MH)
 
-**Dificultad:** Story Points
+**Dificultad:** 3 Story Points
 
-**As** ... , **I want to** ... , **So that** ...
+**As** desarrolladora de visión artificial, **I want to** ejecutar un modelo YOLO sobre los frames de un video de demostración, **So that** pueda validar la detección de personas antes de implementar zonas, métricas y comunicación con la API.
 
 ```gherkin
-Scenario:
-  Given
-  When
-  Then
-  And
+Scenario: Detección de personas en un video de demostración
+  Given un video de demostración y un modelo YOLO
+  And un entorno con GPU CUDA disponible o CPU como alternativa
+  When ejecuto el agente sobre el video
+  Then el agente procesa los frames seleccionados
+  And conserva únicamente detecciones de la clase persona que superen el umbral configurado
+  And informa en consola si usa CUDA o CPU
 ```
