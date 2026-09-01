@@ -1,59 +1,90 @@
-import cv2
+import logging
+import time
+
 import torch
 from ultralytics import YOLO
 
 VIDEO_PATH = "vision/data/demo/supermarket.mp4"
+MODEL_PATH = "yolov8n.pt"
+PROGRESS_EVERY_N_FRAMES = 30
+
+logger = logging.getLogger(__name__)
 
 
 def get_device() -> str:
-    """Selecciona RTX, si no existe, usa CPU"""
+    """Selecciona CUDA si está disponible; de lo contrario, usa CPU."""
 
     if torch.cuda.is_available():
-        print(f"Dispositivo seleccionado: cuda ({torch.cuda.get_device_name(0)})")
+        logger.info("Dispositivo seleccionado: cuda (%s)", torch.cuda.get_device_name(0))
         return "cuda"
 
-    print("Dispositivo seleccionado: cpu")
+    logger.info("Dispositivo seleccionado: cpu")
     return "cpu"
 
 
 def main() -> None:
-    """Ejecuta deteccion de personas sobre un video"""
+    """Ejecuta detección de personas sobre un video sin interfaz gráfica."""
 
     device = get_device()
-    model = YOLO("yolov8n.pt") # Modelo liviano de Yolo
+    model = YOLO(MODEL_PATH)
+    logger.info(
+        "Iniciando detección: fuente=%s, modelo=%s, dispositivo=%s",
+        VIDEO_PATH,
+        MODEL_PATH,
+        device,
+    )
 
-    cap = cv2.VideoCapture(VIDEO_PATH)
-    fps = cap.get(cv2.CAP_PROP_FPS) # Captura de frames por segundo
-    cap.release()
-
-    # Delay para que el video se reproduzca como el original
-    delay = max(1, int(1000 / fps)) if fps > 0 else 30 
-    # Configura la ventana para que sea redimensionable
-    cv2.namedWindow("RetaiLO Analytics", cv2.WINDOW_NORMAL)
+    started_at = time.perf_counter()
+    frames_processed = 0
+    total_detections = 0
 
     try:
         results = model.predict(
             source=VIDEO_PATH,
             stream=True,
-            classes=[0], # Clase 0 corresponde a personas en el modelo COCO
-            conf=0.5, # Umbral de confianza para detección
+            classes=[0],
+            conf=0.5,
             device=device,
-            verbose=False, # Desactiva el printeo en terminal de cada frame
+            verbose=False,
         )
 
         for result in results:
-            annotated_frame = result.plot() if hasattr(result, "plot") else result
-            if isinstance(annotated_frame, torch.Tensor):
-                annotated_frame = annotated_frame.cpu().numpy()
-            cv2.imshow("RetaiLO Analytics", annotated_frame)
+            frames_processed += 1
+            if isinstance(result, torch.Tensor):
+                logger.warning("El frame %d no contiene resultados de detección", frames_processed)
+                continue
 
-            key = cv2.waitKey(delay) & 0xFF
-            if key in (ord("q"), 27):
-                print("Proceso interrumpido")
-                break
-    finally:
-        cv2.destroyAllWindows()
+            boxes = result.boxes
+            detections_in_frame = len(boxes) if boxes is not None else 0
+            total_detections += detections_in_frame
+
+            if frames_processed % PROGRESS_EVERY_N_FRAMES == 0:
+                elapsed = time.perf_counter() - started_at
+                effective_fps = frames_processed / elapsed if elapsed > 0 else 0.0
+                logger.info(
+                    "Progreso: frame=%d, detecciones=%d, FPS efectivo=%.2f",
+                    frames_processed,
+                    detections_in_frame,
+                    effective_fps,
+                )
+    except Exception:
+        logger.exception("La detección de Vision falló después de %d frames", frames_processed)
+        raise
+
+    elapsed = time.perf_counter() - started_at
+    effective_fps = frames_processed / elapsed if elapsed > 0 else 0.0
+    logger.info(
+        "Detección finalizada: frames=%d, detecciones=%d, duración=%.2f s, FPS efectivo=%.2f",
+        frames_processed,
+        total_detections,
+        elapsed,
+        effective_fps,
+    )
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
     main()
