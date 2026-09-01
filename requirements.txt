@@ -4,7 +4,7 @@ sqlalchemy
 alembic
 psycopg[binary]
 ultralytics
-opencv-python-headless
+opencv-python
 pytest
 pytest-cov
 httpx

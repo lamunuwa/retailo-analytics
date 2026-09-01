@@ -8,6 +8,24 @@ El orden de registro es ascendente. En la parte superior estará el registro má
 
 ---
 
+## [2026-08-31] Generacion de un ejemplo de test para vision
+
+**Quién:** LaMunuwa | Anna Valentina
+
+**Herramienta:** ChatGPT
+
+**Qué se pidió:** El primer código de YOLO es un código copia y pega de un código pasado que yo tenía. Sin embargo, el flujo correcto debe ser generar test -> generar código. Yo no sé generar un test para probar modelos de YOLO. Solicité que generara uno para probar `vision/src/main.py` y que lo explicara. Se uso este prompt:
+
+> Me recomiendas hacer test para la parte de vision? Es que anteriormente hice para probar APIs pero nunca vi como se hacen para probar YOLO.
+>
+> Dame un ejemplo que pruebe mi `vision/src/main.py`y explicamelo en tu resumen.
+
+**Qué se generó / propuso:** Generó el código dentro de `test_vision.py`, usando `unittest.mock`, una librería que evito usar durante todo SensorHub, ya que nunca la entendí. Posteriormente, le comenté esto mismo, y me dijo para qué sirve dicha librería y que sin ella estaríamos en una situación complicada para generar test de YOLO.
+
+**Qué se aceptó y qué se rechazó, y por qué:** N/A
+
+**Validación:** Ejecutar `pytest` o `pytest vision` y ver que pase, asi mismo investigar de que se trata `unittest.mock`.
+
 ## [2026-08-30] Redaccion de BACKLOG.md
 
 **Quién:** LaMunuwa | Anna Valentina

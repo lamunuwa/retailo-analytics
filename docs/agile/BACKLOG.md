@@ -225,13 +225,13 @@ El orden de registro es ascendente. En la parte superior estará la US más actu
 
 ## Sprint 1
 
-### Feature: Crear esquema Pydantic VideoResult para métricas agregadas
+### 2. Crear esquema Pydantic VideoResult para métricas agregadas
 
 **Prioridad:** Must Have (MH)
 
 **Dificultad:** 2 Story Points
 
-**As a** desarrolladora de la API, **I want to** tener el esquema Pydantic para `VideoResult`, **So that** la API pueda recibir y validar correctamente las métricas agregadas que enviará la cámara.
+**As a** desarrollador de la API, **I want to** tener el esquema Pydantic para `VideoResult`, **So that** la API pueda recibir y validar correctamente las métricas agregadas que enviará la cámara.
 
 ```gherkin
 Scenario: Validar resultado de sesión correcto
@@ -243,31 +243,22 @@ Scenario: Rechazar resultado con datos faltantes o incorrectos
   Given un payload JSON que omite campos obligatorios o envía tipos erróneos
   When se procesa con el modelo VideoResult
   Then Pydantic devuelve un error de validación ValidationError.
-
 ```
 
-**Definition of Done (DoD):**
+## 1. Detectar personas en video de demostración
 
-* [ ] Pasa linter (`ruff check`) y tipado estricto (`mypy`).
-* [ ] Pruebas unitarias completadas y exitosas (`pytest`).
-* [ ] Cobertura de pruebas mantenida en >= 80%.
-* [ ] Criterios de aceptación cumplidos.
+**Prioridad:** Must Have (MH)
 
----
+**Dificultad:** 3 Story Points
 
-## US-0X: Titulo
-
-**Prioridad:** MoSCoW prioritization method
-
-**Dificultad:** Story Points
-
-**As** ... , **I want to** ... , **So that** ...
+**As** desarrolladora de visión artificial, **I want to** ejecutar un modelo YOLO sobre los frames de un video de demostración, **So that** pueda validar la detección de personas antes de implementar zonas, métricas y comunicación con la API.
 
 ```gherkin
-Scenario:
-  Given
-  When
-  Then
-  And
+Scenario: Detección de personas en un video de demostración
+  Given un video de demostración y un modelo YOLO
+  And un entorno con GPU CUDA disponible o CPU como alternativa
+  When ejecuto el agente sobre el video
+  Then el agente procesa los frames seleccionados
+  And conserva únicamente detecciones de la clase persona que superen el umbral configurado
+  And informa en consola si usa CUDA o CPU
 ```
-

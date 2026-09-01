@@ -20,9 +20,9 @@ warn_unused_ignores = true
 disallow_untyped_defs = true
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["app"]
-addopts = "--cov=app/src --cov-fail-under=80"
+testpaths = ["tests/api", "tests/vision"]
+pythonpath = ["app", "."]
+addopts = "--cov=app/src --cov=vision/src --cov-fail-under=80"
 
 [tool.coverage.run]
 omit = [

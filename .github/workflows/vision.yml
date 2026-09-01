@@ -1,0 +1,47 @@
+name: VISION CI
+
+on:
+  push:
+    branches:
+      - "main"
+      - "dev"
+      - "feature/**"
+    paths:
+      - "vision/**"
+      - "tests/vision/**"
+      - "pyproject.toml"
+      - ".github/workflows/vision.yml"
+  pull_request:
+    branches:
+      - "main"
+      - "dev"
+    paths:
+      - "vision/**"
+      - "tests/vision/**"
+      - "pyproject.toml"
+      - ".github/workflows/vision.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install vision dependencies
+        run: pip install -r vision/requirements.txt pytest pytest-cov ruff mypy
+
+      - name: Run Ruff
+        run: ruff check vision/src tests/vision
+
+      - name: Run Mypy
+        run: mypy vision/src tests/vision
+
+      - name: Run Pytest
+        run: pytest -o addopts="" tests/vision --cov=vision/src --cov-fail-under=80
