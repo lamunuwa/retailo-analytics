@@ -225,6 +225,36 @@ El orden de registro es ascendente. En la parte superior estará la US más actu
 
 ## Sprint 1
 
+### Feature: Crear esquema Pydantic VideoResult para métricas agregadas
+
+**Prioridad:** Must Have (MH)
+
+**Dificultad:** 2 Story Points
+
+**As a** desarrolladora de la API, **I want to** tener el esquema Pydantic para `VideoResult`, **So that** la API pueda recibir y validar correctamente las métricas agregadas que enviará la cámara.
+
+```gherkin
+Scenario: Validar resultado de sesión correcto
+  Given un payload JSON con métricas agregadas (frames, personas, tiempos y zonas)
+  When se procesa con el modelo VideoResult
+  Then la validación es exitosa y los tipos de datos son correctos.
+
+Scenario: Rechazar resultado con datos faltantes o incorrectos
+  Given un payload JSON que omite campos obligatorios o envía tipos erróneos
+  When se procesa con el modelo VideoResult
+  Then Pydantic devuelve un error de validación ValidationError.
+
+```
+
+**Definition of Done (DoD):**
+
+* [ ] Pasa linter (`ruff check`) y tipado estricto (`mypy`).
+* [ ] Pruebas unitarias completadas y exitosas (`pytest`).
+* [ ] Cobertura de pruebas mantenida en >= 80%.
+* [ ] Criterios de aceptación cumplidos.
+
+---
+
 ## US-0X: Titulo
 
 **Prioridad:** MoSCoW prioritization method
@@ -240,3 +270,4 @@ Scenario:
   Then
   And
 ```
+
