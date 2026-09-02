@@ -28,3 +28,21 @@ def test_create_store_endpoint() -> None:
     }
 
     app.dependency_overrides.clear()
+
+
+def test_list_active_stores_endpoint() -> None:
+    mock_repo = MagicMock()
+    mock_repo.get_all_active.return_value = [
+        StoreModel(id=1, name="Tienda Activa", is_active=True)
+    ]
+
+    app.dependency_overrides[get_store_repository] = lambda: mock_repo
+
+    client = TestClient(app)
+    response = client.get("/stores")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+    assert response.json()[0]["name"] == "Tienda Activa"
+
+    app.dependency_overrides.clear()
