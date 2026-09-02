@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.src.core.db import get_db
@@ -30,3 +30,14 @@ def list_stores(
     repo: Annotated[StoreRepository, Depends(get_store_repository)],
 ) -> list[StoreModel]:
     return repo.get_all_active()
+
+
+@router.delete("/{store_id}", response_model=StoreResponse)
+def soft_delete_store(
+    store_id: int,
+    repo: Annotated[StoreRepository, Depends(get_store_repository)],
+) -> StoreModel:
+    store = repo.soft_delete(store_id)
+    if store is None:
+        raise HTTPException(status_code=404, detail="Store not found")
+    return store
