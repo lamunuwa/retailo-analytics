@@ -21,3 +21,17 @@ def test_store_repository_creates_store() -> None:
     assert store.is_active is True
     mock_session.add.assert_called_once_with(store)
     mock_session.commit.assert_called_once()
+
+
+def test_store_repository_lists_active_stores() -> None:
+    mock_session = MagicMock()
+    mock_session.scalars.return_value.all.return_value = [
+        StoreModel(id=1, name="Tienda Activa", is_active=True)
+    ]
+
+    repo = StoreRepository(session=mock_session)
+
+    stores = repo.get_all_active()
+
+    assert len(stores) == 1
+    assert stores[0].name == "Tienda Activa"
