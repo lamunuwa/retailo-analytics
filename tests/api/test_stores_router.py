@@ -63,3 +63,11 @@ def test_soft_delete_store_endpoint() -> None:
     assert response.json()["is_active"] is False
 
     app.dependency_overrides.clear()
+
+
+def test_create_store_without_name_returns_422() -> None:
+    client = TestClient(app)
+
+    response = client.post("/stores", json={})
+
+    assert response.status_code == 422
