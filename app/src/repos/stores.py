@@ -1,3 +1,4 @@
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.src.models.stores import StoreModel
@@ -13,3 +14,7 @@ class StoreRepository:
         self.session.commit()
         self.session.refresh(store)
         return store
+
+    def get_all_active(self) -> list[StoreModel]:
+        stmt = select(StoreModel).where(StoreModel.is_active.is_(True))
+        return list(self.session.scalars(stmt).all())
