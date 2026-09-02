@@ -23,3 +23,10 @@ def create_store(
     repo: Annotated[StoreRepository, Depends(get_store_repository)],
 ) -> StoreModel:
     return repo.create(name=payload.name)
+
+
+@router.get("/", response_model=list[StoreResponse])
+def list_stores(
+    repo: Annotated[StoreRepository, Depends(get_store_repository)],
+) -> list[StoreModel]:
+    return repo.get_all_active()
