@@ -18,3 +18,13 @@ class StoreRepository:
     def get_all_active(self) -> list[StoreModel]:
         stmt = select(StoreModel).where(StoreModel.is_active.is_(True))
         return list(self.session.scalars(stmt).all())
+
+    def soft_delete(self, store_id: int) -> StoreModel | None:
+        store = self.session.get(StoreModel, store_id)
+        if store is None:
+            return None
+
+        store.is_active = False
+        self.session.commit()
+        self.session.refresh(store)
+        return store
