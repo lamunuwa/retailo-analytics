@@ -46,3 +46,20 @@ def test_list_active_stores_endpoint() -> None:
     assert response.json()[0]["name"] == "Tienda Activa"
 
     app.dependency_overrides.clear()
+
+
+def test_soft_delete_store_endpoint() -> None:
+    mock_repo = MagicMock()
+    mock_repo.soft_delete.return_value = StoreModel(
+        id=1, name="Tienda a borrar", is_active=False
+    )
+
+    app.dependency_overrides[get_store_repository] = lambda: mock_repo
+
+    client = TestClient(app)
+    response = client.delete("/stores/1")
+
+    assert response.status_code == 200
+    assert response.json()["is_active"] is False
+
+    app.dependency_overrides.clear()
