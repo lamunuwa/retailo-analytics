@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+
 from app.src.routers import stores
 
 app = FastAPI(title="RetaiLO Analytics")

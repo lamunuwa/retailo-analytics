@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 from app.src.main import app
 from app.src.models.stores import StoreModel
+
 # Importamos la función de dependencia que usa el router
 from app.src.routers.stores import get_store_repository
 
