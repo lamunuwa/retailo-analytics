@@ -53,4 +53,3 @@ class ZoneCounter:
         return assignments
 
     # ----------------------------------------------------------
-    

@@ -4,7 +4,6 @@ from datetime import UTC, datetime
 
 from vision.src.modules.counting import ZoneCounter
 from vision.src.modules.detection import PersonDetector
-from vision.src.modules.visualization import DetectionVisualizer
 from vision.src.modules.zones import RoiZone
 
 
@@ -22,39 +21,25 @@ class VideoSession:
 def run_detection(
     device: str,
     zones: Sequence[RoiZone],
-    video_path: str = "vision/data/demo/supermarket.mp4", # gitignorado
-    model_path: str = "yolov8n.pt", # gitignorado
+    video_path: str = "vision/data/demo/supermarket.mp4",  # gitignorado
+    model_path: str = "yolov8n.pt",  # gitignorado
 ) -> VideoSession:
-    """Corre la deteccion de personas"""
+    """Corre la detección de personas"""
 
     detector = PersonDetector(
         model_path=model_path,
         device=device,
     )
     counter = ZoneCounter(zones)
-    visualizer = DetectionVisualizer(zones)
 
     started_at = datetime.now(UTC)
     processed_frames = 0
     detected_people = 0
 
-    try:
-        for frame in detector.detect_in_video(video_path):
-            processed_frames += 1
-            detected_people += len(frame.people)
-
-            assignments = counter.register(frame.people)
-            should_exit = visualizer.show(
-                frame,
-                assignments,
-                counter.counts,
-            )
-
-            if should_exit:
-                break
-
-    finally:
-        visualizer.close()
+    for frame in detector.detect_in_video(video_path):
+        processed_frames += 1
+        detected_people += len(frame.people)
+        counter.register(frame.people)
 
     session = VideoSession(
         started_at=started_at,

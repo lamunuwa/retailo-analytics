@@ -96,6 +96,7 @@ def test_main_ok_uses_configured_zones_and_reports_counts(
     output = capsys.readouterr().out
 
     assert result == session_result
+    assert "Personas detectadas: 1" in output
     assert "entrada: 1" in output
 
 # -----------------------------------------------------
@@ -346,7 +347,7 @@ def test_detection_visualizer_ok_shows_frame_and_closes_windows(
 
 # Sesion de deteccion ---------------------------------
 
-def test_run_detection_ok_collects_metrics_and_closes_visualizer(
+def test_run_detection_ok_collects_metrics(
     temp_zone: RoiZone,
 ) -> None:
     person = PersonDetection(
@@ -368,9 +369,6 @@ def test_run_detection_ok_collects_metrics_and_closes_visualizer(
     counter.register.return_value = {person: temp_zone}
     counter.counts = {"entrada": 1}
 
-    visualizer = MagicMock()
-    visualizer.show.return_value = True
-
     with (
         patch.object(
             session,
@@ -382,11 +380,6 @@ def test_run_detection_ok_collects_metrics_and_closes_visualizer(
             "ZoneCounter",
             return_value=counter,
         ),
-        patch.object(
-            session,
-            "DetectionVisualizer",
-            return_value=visualizer,
-        ),
     ):
         result = session.run_detection(
             device="cpu",
@@ -397,15 +390,6 @@ def test_run_detection_ok_collects_metrics_and_closes_visualizer(
 
     detector.detect_in_video.assert_called_once_with("video.mp4")
     counter.register.assert_called_once_with(frame.people)
-
-    visualizer.show.assert_called_once_with(
-        frame,
-        {person: temp_zone},
-        {"entrada": 1},
-    )
-
-    visualizer.close.assert_called_once()
-
     assert result.processed_frames == 1
     assert result.detected_people == 1
     assert result.detections_by_zone == {"entrada": 1}

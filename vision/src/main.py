@@ -16,7 +16,7 @@ def get_device() -> str:
 
 
 def main() -> VideoSession:
-    """Inicia la deteccion y cuenta por zona"""
+    """Inicia la detección y cuenta por zona."""
 
     zones = get_configured_zones()
     session = run_detection(
@@ -24,6 +24,7 @@ def main() -> VideoSession:
         zones=zones,
     )
 
+    print(f"Personas detectadas: {session.detected_people}")
     for zone_name, count in session.detections_by_zone.items():
         print(f"{zone_name}: {count}")
     return session
