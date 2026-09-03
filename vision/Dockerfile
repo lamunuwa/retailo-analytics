@@ -17,4 +17,4 @@ RUN chown -R visionuser:visionuser /vision
 
 USER visionuser
 
-CMD ["python", "-m", "src.main"]
+CMD ["python", "-m", "vision.src.main"]
