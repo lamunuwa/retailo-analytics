@@ -8,6 +8,48 @@ El orden de registro es ascendente. En la parte superior estará el registro má
 
 ---
 
+## [2026-09-02] Fase de setup y corrección de IA para CRUD de Stores
+
+**Quién:** @aleixscarbo | Aleixs Carbonell
+
+**Herramienta:** Gemini (TeachLead) + GitHub Copilot
+
+**Qué se pidió:** Desarrollar el CRUD inicial para tiendas siguiendo el flujo TDD de Red-Green-Refactor. Se pidió generar pruebas para repositorio y endpoints de `stores`, así como implementar `POST /stores` y `GET /stores` con inyección de dependencias realista. Durante esta fase, la IA generó una solución de FastAPI incorrecta en la que la dependencia se construía con `Depends(session=None)`, ignorando los mocks y rompiendo el comportamiento esperado de las pruebas.
+
+**Qué se generó / propuso:** Se generaron pruebas unitarias para repositorio y router, junto con una primera versión del CRUD de tiendas. El problema apareció cuando la inyección de dependencias se apuntó a la clase `StoreRepository` o a un valor por defecto nulo, en lugar de a la función real `get_store_repository`, lo que hacía que FastAPI no usara la instancia mockeada y provocara un `AttributeError` antes de llegar a la lógica funcional.
+
+**Qué se aceptó y qué se rechazó, y por qué:** Se aceptó corregir la inyección usando `app.dependency_overrides[get_store_repository] = lambda: mock_repo`, garantizando que FastAPI inyectara la dependency function exacta que estaba siendo mockeada. Se rechazó el enfoque de `Depends(session=None)` y cualquier variante que ocultara el mock porque no reflejaba el flujo real del sistema y hacía que la prueba fallara por un problema de infraestructura en vez de por el comportamiento que se quería validar. Esta corrección fue crítica para mantener la metodología TDD sin false negatives artificiales.
+
+**Validación:** Se ejecutaron las pruebas de repositorio y router de tiendas con `pytest` para comprobar que la creación y listado de tiendas funcionaban correctamente bajo la inyección controlada. La validación demostró que el problema no estaba en el dominio de la lógica sino en el acoplamiento de dependencias, y que el flujo de FastAPI quedaba estable una vez ajustada la dependencia exacta.
+
+## [2026-09-02] Fase de refactorización de linter para dependencias con Annotated
+
+**Quién:** @aleixscarbo | Aleixs Carbonell
+
+**Herramienta:** Gemini (TeachLead) + GitHub Copilot
+
+**Qué se pidió:** Refactorizar la inyección de dependencias del router para evitar la advertencia `B008` de Ruff provocada por llamar funciones en valores por defecto dentro de `Depends()`. La IA había generado un estilo que funcionaba, pero violaba la recomendación moderna de dependencia tipada y limpia para FastAPI.
+
+**Qué se generó / propuso:** Se propuso y aplicó el patrón `Annotated` para las dependencias del router, dejando la firma de `get_store_repository` como `session: Annotated[Session, Depends(get_db)]` y los parámetros de las rutas como `repo: Annotated[StoreRepository, Depends(get_store_repository)]`. Este enfoque permite mantener una resolución limpia de dependencias, una tipificación fuerte y una compatibilidad mejor con linters y validadores modernos.
+
+**Qué se aceptó y qué se rechazó, y por qué:** Se aceptó esta refactorización porque elimina la llamada directa de funciones en valores por defecto y alinea el código con el estándar recomendado por FastAPI y Ruff. Se rechazó la solución anterior porque, aunque era funcional, no era la forma esperada por la herramienta de análisis estático y añadía ruido técnico no necesario. Este ajuste mejoró la calidad del código sin cambiar la semántica de la API.
+
+**Validación:** Se comprobó visualmente la estructura del router y se validó que la sintaxis y el patrón de dependencias eran correctos. La corrección completó la fase de limpieza técnica sin comprometer la funcionalidad del CRUD ni la capacidad de testear con mocks y overrides de dependencias.
+
+## [2026-09-02] Fase de arquitectura: Soft Delete y validación con Pydantic para Stores
+
+**Quién:** @aleixscarbo | Aleixs Carbonell
+
+**Herramienta:** Gemini (TeachLead) + GitHub Copilot
+
+**Qué se pidió:** Implementar la lógica de borrado lógico para tiendas y documentar la arquitectura de negocio asociada. La intención era evitar eliminaciones físicas que pudieran romper integridad referencial, especialmente en un sistema que podría escalar con cámaras, zonas y analíticas ligadas a cada tienda. Además, se buscaba validar la entrada del modelo con Pydantic para bloquear peticiones sin nombre antes de llegar al router.
+
+**Qué se generó / propuso:** Se implementó `soft_delete(self, store_id: int) -> StoreModel | None` dentro de `StoreRepository`, con la secuencia `self.session.get(StoreModel, store_id)`, cambio de `is_active` a `False`, `self.session.commit()` y `self.session.refresh(store)`. Al mismo tiempo, se definió el esquema `StoreCreate` con validación de `name` y se dejó que Pydantic manejara la coerción y el rechazo antes de cualquier lógica del endpoint. El escenario de validación quedó cubierto por una prueba que envía `POST /stores` con payload vacío y espera `422`.
+
+**Qué se aceptó y qué se rechazó, y por qué:** Se aceptó la decisión de usar borrado lógico en SQLAlchemy para mantener la integridad referencial y el historial de las tiendas. Se rechazó la eliminación física por defecto porque rompe la consistencia del modelo y obliga a tratar datos eliminados como registros huérfanos. También se aceptó delegar la validación de entrada a `Pydantic` porque cumple con el principio SRP: el router no debe validar nombres, y el sistema bloquea inmediatamente peticiones malformadas con un 422 antes de llegar al repositorio o a la base de datos. Este was not only cleaner, but more robust and easier to test.
+
+**Validación:** Se verificó que `soft_delete_store` cambiaba `is_active` a `False` y devolvía `200 OK`, mientras que el escenario sin nombre devolvía `422` sin necesidad de mocks del repositorio. La validación mostró que la solución de arquitectura era coherente con el dominio y con las buenas prácticas de FastAPI, SQLAlchemy y Pydantic.
+
 ## [2026-08-31] Generacion de un ejemplo de test para vision
 
 **Quién:** LaMunuwa | Anna Valentina
