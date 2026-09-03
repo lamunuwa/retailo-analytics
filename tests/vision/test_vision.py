@@ -49,14 +49,22 @@ def test_get_device_cpu_when_cuda_is_unavailable() -> None:
 
 
 def test_get_device_cuda_when_available() -> None:
-    with patch.object(
-        vision_main.torch.cuda,
-        "is_available",
-        return_value=True,
+    with (
+        patch.object(
+            vision_main.torch.cuda,
+            "is_available",
+            return_value=True,
+        ),
+        patch.object(
+            vision_main.torch.cuda,
+            "get_device_name",
+            return_value="GPU de prueba",
+        ) as get_device_name,
     ):
         device = vision_main.get_device()
 
     assert device == "cuda"
+    get_device_name.assert_called_once_with(0)
 
 
 def test_main_ok_uses_configured_zones_and_reports_counts(
