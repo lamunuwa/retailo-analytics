@@ -14,3 +14,5 @@
 - [ ] Si es una decisión importante de arquitectura: agregué/actualicé un ADR en `docs/adr/`
 
 ## Notas para el peer
+
+## Como probarlo
