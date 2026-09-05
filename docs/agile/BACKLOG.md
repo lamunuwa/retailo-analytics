@@ -274,6 +274,27 @@ Scenario: Rechazar una configuración de zonas incompleta
   Then recibo un error de validación que explica la configuración inválida
 ```
 
+### Feature: Crear esquemas Pydantic para Cameras
+
+**Prioridad:** Must Have (MH)
+
+**Dificultad:** 2 Story Points
+
+**As a** desarrollador de la API, **I want to** tener los esquemas Pydantic para la entidad Camera, **So that** la API pueda validar la creación y actualización de cámaras asociadas a una tienda.
+
+```gherkin
+Scenario: Validar creación de cámara con datos correctos
+  Given un payload JSON con "name" y "source_type"
+  When se procesa con el modelo de creación de cámara
+  Then la validación es exitosa.
+
+Scenario: Rechazar cámara sin campos obligatorios
+  Given un payload JSON que omite "name" o "source_type"
+  When se procesa con el modelo
+  Then Pydantic devuelve ValidationError.
+```
+
+### Feature: Crear esquema Pydantic VideoResult para métricas agregadas
 ### 2. Crear esquema Pydantic VideoResult para métricas agregadas
 
 **Prioridad:** Must Have (MH)
