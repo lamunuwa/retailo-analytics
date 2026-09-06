@@ -28,3 +28,13 @@ class StoreRepository:
         self.session.commit()
         self.session.refresh(store)
         return store
+
+    def update(self, store_id: int, name: str) -> StoreModel | None:
+        store = self.session.get(StoreModel, store_id)
+        if store is None:
+            return None
+
+        store.name = name
+        self.session.commit()
+        self.session.refresh(store)
+        return store
