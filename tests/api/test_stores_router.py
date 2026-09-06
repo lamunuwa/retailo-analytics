@@ -71,3 +71,20 @@ def test_create_store_without_name_returns_422() -> None:
     response = client.post("/stores", json={})
 
     assert response.status_code == 422
+
+
+def test_update_store_endpoint() -> None:
+    mock_repo = MagicMock()
+    mock_repo.update.return_value = StoreModel(
+        id=1, name="Nombre Nuevo", is_active=True
+    )
+
+    app.dependency_overrides[get_store_repository] = lambda: mock_repo
+
+    client = TestClient(app)
+    response = client.patch("/stores/1", json={"name": "Nombre Nuevo"})
+
+    assert response.status_code == 200
+    assert response.json()["name"] == "Nombre Nuevo"
+
+    app.dependency_overrides.clear()
