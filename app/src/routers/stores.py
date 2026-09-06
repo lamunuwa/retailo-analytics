@@ -41,3 +41,15 @@ def soft_delete_store(
     if store is None:
         raise HTTPException(status_code=404, detail="Store not found")
     return store
+
+
+@router.patch("/{store_id}", response_model=StoreResponse)
+def update_store(
+    store_id: int,
+    payload: StoreCreate,
+    repo: Annotated[StoreRepository, Depends(get_store_repository)],
+) -> StoreModel:
+    store = repo.update(store_id=store_id, name=payload.name)
+    if store is None:
+        raise HTTPException(status_code=404, detail="Store not found")
+    return store
