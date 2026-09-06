@@ -48,3 +48,18 @@ def test_store_repository_soft_deletes_store() -> None:
 
     assert tienda_mock.is_active is False
     mock_session.commit.assert_called_once()
+
+
+def test_store_repository_updates_store() -> None:
+    mock_session = MagicMock()
+    tienda_mock = StoreModel(id=1, name="Nombre Viejo", is_active=True)
+    mock_session.get.return_value = tienda_mock
+
+    repo = StoreRepository(session=mock_session)
+
+    updated_store = repo.update(store_id=1, name="Nombre Nuevo")
+
+    assert tienda_mock.name == "Nombre Nuevo"
+    mock_session.commit.assert_called_once()
+    mock_session.refresh.assert_called_once_with(tienda_mock)
+    assert updated_store is tienda_mock
