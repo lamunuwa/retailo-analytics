@@ -15,3 +15,8 @@ app.include_router(analytics_router)
 def root() -> dict[str, str]:
     """Endpoint de verificación de estado del servidor."""
     return {"status": "online"}
+from app.src.routers import stores
+
+app = FastAPI(title="RetaiLO Analytics")
+
+app.include_router(stores.router)
