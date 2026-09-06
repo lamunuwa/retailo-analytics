@@ -8,6 +8,41 @@ El orden de registro es ascendente. En la parte superior estará el registro má
 
 ---
 
+## [2026-09-05] Resolución de Peer Review: defensa de la arquitectura de Stores
+
+**Quién:** @aleixscarbo | Aleixs Carbonell
+
+**Herramienta:** GitHub Copilot
+
+**Qué se pidió:** Atender el feedback de la Project Lead, Anna, durante el Peer Review sobre la ausencia de una capa de Servicios en el CRUD de Stores. La observación planteaba que el flujo debería incluir una separación explícita entre router, servicio y repositorio antes de continuar ampliando la funcionalidad de la API.
+
+**Qué se generó / propuso:** Se analizó la responsabilidad actual de cada capa. El router se encarga de HTTP, dependencias, códigos de estado y transformación mediante esquemas; Pydantic valida la entrada del cliente; y `StoreRepository` concentra las operaciones de persistencia con SQLAlchemy. Bajo el alcance actual, las operaciones de Stores son un CRUD directo sin reglas de negocio, orquestación, transacciones compuestas ni integraciones externas que requieran una capa intermedia.
+
+**Qué se aceptó y qué se rechazó, y por qué:** Se aceptó mantener temporalmente la arquitectura sin una capa de Servicios, aplicando YAGNI. Crear ahora un servicio que únicamente recibiera parámetros del router y llamara al repositorio produciría un Servicio Anémico o *pass-through service*: añadiría archivos, abstracciones y puntos de mantenimiento sin encapsular una decisión de negocio real. La decisión no descarta la capa para siempre; queda condicionada a que aparezcan reglas de negocio, coordinación entre repositorios, validaciones que excedan el esquema de entrada, autorización, transacciones complejas o integraciones externas. Se rechazó introducir una capa únicamente por simetría arquitectónica o por anticipar necesidades que todavía no existen, porque aumentaría la complejidad sin aportar comportamiento.
+
+**Validación:** Se revisó el flujo completo del CRUD y se comprobó que las responsabilidades actuales están delimitadas: `StoreCreate` bloquea payloads inválidos, el router traduce la ausencia de recursos a `404` y el repositorio ejecuta la persistencia. La defensa queda respaldada por YAGNI, separación de responsabilidades y el principio de mantener las abstracciones justificadas por comportamiento real. La decisión podrá revisarse cuando el dominio de Stores deje de ser un CRUD puro.
+
+## [2026-09-05] Corrección de desviación del backlog: actualización parcial de Stores con TDD
+
+**Quién:** @aleixscarbo | Aleixs Carbonell
+
+**Herramienta:** GitHub Copilot
+
+**Qué se pidió:** Corregir una desviación detectada durante el Peer Review: la User Story original de Stores no incluía la actualización parcial exigida por `docs/agile/BACKLOG.md`, donde se define `PATCH /stores/{store_id}` como parte del CRUD. Se asumió la deuda técnica y se completó el flujo mediante TDD estricto, avanzando de RED a GREEN sin modificar el alcance hacia una capa de Servicios innecesaria.
+
+**Qué se generó / propuso:** Primero se añadió la prueba unitaria `test_store_repository_updates_store` en `tests/api/test_store_repo.py`. La prueba construye un `MagicMock` para la sesión, configura una tienda existente y exige que `StoreRepository.update` cambie el nombre, haga `commit`, ejecute `refresh` y retorne la misma instancia. Como el método aún no existía, el estado RED quedó representado por un `AttributeError`.
+
+Después se añadió la prueba de router `test_update_store_endpoint` en `tests/api/test_stores_router.py`. Esta prueba inyecta un repositorio simulado mediante `app.dependency_overrides[get_store_repository]`, envía `PATCH /stores/1` con `{"name": "Nombre Nuevo"}` y espera `200 OK` con el nombre actualizado. Antes de registrar la ruta, el estado RED del endpoint quedó representado por `405 Method Not Allowed`.
+
+Para llegar a GREEN se implementó `StoreRepository.update(store_id, name)` con SQLAlchemy 2.0: búsqueda mediante `self.session.get(StoreModel, store_id)`, retorno `None` cuando no existe, actualización de `name`, `commit`, `refresh` y retorno de la entidad. Después se incorporó en FastAPI `@router.patch("/{store_id}", response_model=StoreResponse)`, reutilizando `StoreCreate`, `get_store_repository` y el mismo contrato de `404 Store not found` usado por el borrado lógico.
+
+**Qué se aceptó y qué se rechazó, y por qué:** Se aceptó implementar la actualización como una operación parcial limitada al atributo `name`, porque es el contrato definido por la historia actual y evita introducir campos no solicitados. Se mantuvo la inyección mediante la función exacta `get_store_repository` para que los overrides de las pruebas representen el flujo real de FastAPI. También se aceptó reutilizar `StoreCreate` como payload porque el esquema ya valida el nombre antes de llegar al router o al repositorio.
+
+Se rechazó modificar el router de producción durante la fase RED, porque habría ocultado el fallo que debía demostrar la prueba. También se rechazó agregar una capa de Servicios como parte de esta corrección: el caso sigue siendo un CRUD directo y no contiene reglas de negocio que justifiquen un servicio. Finalmente, no se introdujo un `PUT` ni una actualización de campos adicionales, ya que habría desviado la implementación del requisito de `PATCH` del backlog.
+
+**Validación:** La secuencia TDD cubrió primero el fallo por `AttributeError` del repositorio y el `405 Method Not Allowed` del router, y después la implementación mínima necesaria para convertir ambos escenarios en GREEN. La prueba del repositorio verifica el cambio de estado y las operaciones de sesión; la prueba del router verifica la inyección del mock, el contrato HTTP `200` y la serialización del nombre actualizado. El flujo final conserva el manejo de `404` cuando la tienda no existe y mantiene intactas las operaciones existentes de creación, listado y borrado lógico.
+
+
 ## [2026-09-02] Fase de setup y corrección de IA para CRUD de Stores
 
 **Quién:** @aleixscarbo | Aleixs Carbonell
