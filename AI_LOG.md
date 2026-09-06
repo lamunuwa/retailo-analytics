@@ -229,3 +229,11 @@ Se rechazó modificar el router de producción durante la fase RED, porque habr�
 **Validación:** Revisé archivo por archivo; en los `Dockerfiles` y en el `docker-compose.yml` me parece que hizo un excelente trabajo, es legible y cumple con lo que mencionaba; lo mismo pasa con los `requirements.txt` aunque aquí le faltaron algunas librerías como NumPy, que yo uso para trabajar en visión artificial. Intentaré trabajar solo con las que puso, esperando que sea un flujo más eficiente.
 
 El único lugar donde podría argumentar que falló fue en `.dockerignore` porque no puso ningún tipo de orden, solo escribió cosas; aproveché eso para borrarlo y copiar y pegar lo que tenía en SensorHub.
+
+## [2026-09-05] Aplicación del Principio de Inversión de Dependencias en Stores
+
+**Contexto:** Se atendieron los Puntos 3 y 4 del Peer Review mediante la aplicación de la letra D de SOLID: el Principio de Inversión de Dependencias.
+
+**Acción:** Se creó `StoreRepositoryProtocol` en la capa de datos con el contrato del repositorio y se refactorizó el Router para inyectar esta abstracción en lugar de depender directamente de la implementación concreta basada en SQLAlchemy.
+
+**Criterio Técnico:** La decisión desacopla las capas superiores de la infraestructura de base de datos, estandariza el código con las convenciones previas del equipo y facilita la creación futura de Fakes en memoria para las pruebas, reduciendo la dependencia de `MagicMock`.

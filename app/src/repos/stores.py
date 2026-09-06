@@ -1,7 +1,23 @@
+from typing import Protocol
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.src.models.stores import StoreModel
+
+
+class StoreRepositoryProtocol(Protocol):
+    def create(self, name: str) -> StoreModel:
+        ...
+
+    def get_all_active(self) -> list[StoreModel]:
+        ...
+
+    def soft_delete(self, store_id: int) -> StoreModel | None:
+        ...
+
+    def update(self, store_id: int, name: str) -> StoreModel | None:
+        ...
 
 
 class StoreRepository:
