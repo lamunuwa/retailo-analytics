@@ -225,9 +225,9 @@ El orden de registro es ascendente. En la parte superior estará la US más actu
 
 ## Sprint 1
 
-### 4. Detección de personas en zonas específicas
+### 6. Detección de personas en zonas específicas
 
-**Prioridad:** Must Have
+**Prioridad:** Must Have (MH)
 
 **Dificultad:** 3 Story Points
 
@@ -253,9 +253,9 @@ Scenario: Visualizar el conteo durante la sesión
   Then se muestran las ROI, las cajas de detección y el conteo acumulado de cada zona
 ```
 
-### 3. Zonas divididas
+### 5. Zonas divididas
 
-**Prioridad:** Must Have
+**Prioridad:** Must Have (MH)
 
 **Dificultad:** 2 Story Points
 
@@ -274,11 +274,11 @@ Scenario: Rechazar una configuración de zonas incompleta
   Then recibo un error de validación que explica la configuración inválida
 ```
 
-### Feature: Crear esquemas Pydantic para Cameras
+### 4. Crear esquemas Pydantic para Cameras
 
 **Prioridad:** Must Have (MH)
 
-**Dificultad:** 2 Story Points
+**Dificulta d:** 2 Story Points
 
 **As a** desarrollador de la API, **I want to** tener los esquemas Pydantic para la entidad Camera, **So that** la API pueda validar la creación y actualización de cámaras asociadas a una tienda.
 
@@ -294,7 +294,40 @@ Scenario: Rechazar cámara sin campos obligatorios
   Then Pydantic devuelve ValidationError.
 ```
 
-### Feature: Crear esquema Pydantic VideoResult para métricas agregadas
+## 3. Gestión de Tiendas (Stores CRUD)
+
+**Prioridad:** Must Have (MH)
+
+**Dificultad:** 3 Story Points
+
+**As** Desarrollador de la API, **I want to** registrar, consultar, actualizar y desactivar tiendas, **So that** pueda estructurar y agrupar las cámaras analíticas por sucursal física.
+
+```gherkin
+Scenario: Crear una tienda nueva con los datos mínimos
+  Given un payload JSON válido que contiene el campo obligatorio "name"
+  When se envía una petición POST a /stores
+  Then la API responde con código 201 Created
+  And la respuesta incluye el store_id generado y el campo is_active en true.
+
+Scenario: Consultar el listado general de tiendas
+  Given que existen múltiples tiendas registradas en la base de datos
+  When se envía una petición GET a /stores
+  Then la API devuelve una lista con los datos de las tiendas
+  And la respuesta no incluye las tiendas que han sido desactivadas lógicamente.
+
+Scenario: Desactivar una tienda (Soft Delete)
+  Given el store_id de una tienda activa en el sistema
+  When se envía una petición DELETE a /stores/{store_id}
+  Then la API actualiza la tienda marcando is_active como false
+  And la base de datos no elimina el registro físicamente para preservar el historial analítico.
+
+Scenario: Rechazar creación de tienda sin nombre
+  Given un payload JSON que omite el campo "name"
+  When se envía una petición POST a /stores
+  Then Pydantic rechaza la petición
+  And la API responde con un error 422 Unprocessable Entity.
+```
+
 ### 2. Crear esquema Pydantic VideoResult para métricas agregadas
 
 **Prioridad:** Must Have (MH)
