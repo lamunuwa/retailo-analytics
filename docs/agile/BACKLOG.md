@@ -225,11 +225,50 @@ El orden de registro es ascendente. En la parte superior estará la US más actu
 
 ## Sprint 1
 
+## 3. Gestión de Tiendas (Stores CRUD)
+
+**Prioridad:** Must Have (MH)
+
+**Dificultad:** 3 Story Points
+
+**As** Desarrollador de la API, 
+**I want to** registrar, consultar, actualizar y desactivar tiendas, 
+**So that** pueda estructurar y agrupar las cámaras analíticas por sucursal física.
+
+### Criterios de Aceptación (Gherkin)
+
+```gherkin
+Scenario: Crear una tienda nueva con los datos mínimos
+  Given un payload JSON válido que contiene el campo obligatorio "name"
+  When se envía una petición POST a /stores
+  Then la API responde con código 201 Created
+  And la respuesta incluye el store_id generado y el campo is_active en true.
+
+Scenario: Consultar el listado general de tiendas
+  Given que existen múltiples tiendas registradas en la base de datos
+  When se envía una petición GET a /stores
+  Then la API devuelve una lista con los datos de las tiendas
+  And la respuesta no incluye las tiendas que han sido desactivadas lógicamente.
+
+Scenario: Desactivar una tienda (Soft Delete)
+  Given el store_id de una tienda activa en el sistema
+  When se envía una petición DELETE a /stores/{store_id}
+  Then la API actualiza la tienda marcando is_active como false
+  And la base de datos no elimina el registro físicamente para preservar el historial analítico.
+
+Scenario: Rechazar creación de tienda sin nombre
+  Given un payload JSON que omite el campo "name"
+  When se envía una petición POST a /stores
+  Then Pydantic rechaza la petición
+  And la API responde con un error 422 Unprocessable Entity.
+
+---
+
 ### Feature: Crear esquemas Pydantic para Cameras
 
 **Prioridad:** Must Have (MH)
 
-**Dificultad:** 2 Story Points
+**Dificulta d:** 2 Story Points
 
 **As a** desarrollador de la API, **I want to** tener los esquemas Pydantic para la entidad Camera, **So that** la API pueda validar la creación y actualización de cámaras asociadas a una tienda.
 
@@ -265,6 +304,8 @@ Scenario: Rechazar resultado con datos faltantes o incorrectos
   When se procesa con el modelo VideoResult
   Then Pydantic devuelve un error de validación ValidationError.
 ```
+
+---
 
 ## 1. Detectar personas en video de demostración
 
