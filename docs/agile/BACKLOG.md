@@ -225,17 +225,82 @@ El orden de registro es ascendente. En la parte superior estará la US más actu
 
 ## Sprint 1
 
+### 6. Detección de personas en zonas específicas
+
+**Prioridad:** Must Have (MH)
+
+**Dificultad:** 3 Story Points
+
+**As**operador de la plataforma de RetaiLO, **I want to** detectar personas y consultar su conteo acumulado por zona, **So that** pueda observar el flujo de personas en las áreas definidas del establecimiento..
+
+```gherkin
+Scenario: Detectar y contabilizar personas por zona
+  Given un modelo YOLO configurado para detectar personas y zonas ROI válidas
+  When inicio una sesión de detección
+  Then el sistema procesa los fotogramas
+  And acumula una detección en la zona donde se encuentre cada persona
+  And detecciones totales y conteos por zona
+
+Scenario: Procesar fotogramas sin detecciones válidas (seguridad)
+  Given un resultado de inferencia sin imagen original o sin personas detectadas
+  When el sistema procesa el resultado
+  Then ignora el resultado sin imagen
+  And continúa la sesión con los fotogramas válidos sin incrementar conteos
+
+Scenario: Visualizar el conteo durante la sesión
+  Given una sesión de detección activa
+  When se procesa un fotograma con personas detectadas
+  Then se muestran las ROI, las cajas de detección y el conteo acumulado de cada zona
+```
+
+### 5. Zonas divididas
+
+**Prioridad:** Must Have (MH)
+
+**Dificultad:** 2 Story Points
+
+**As** consumidor de RetaiLO, **I want to** configurar manualmente zonas de mi tienda, **So that** pueda visualizar y dividir mi tienda en zonas.
+
+```gherkin
+Scenario: Configurar zonas ROI válidas
+  Given una configuración manual con una o más zonas nombradas
+  And cada zona tiene al menos tres puntos que forman un polígono
+  When inicio el procesamiento de Vision
+  Then las zonas quedan disponibles para evaluar las detecciones del video
+
+Scenario: Rechazar una configuración de zonas incompleta
+  Given una configuración sin zonas o con una zona que no forma un polígono
+  When intento iniciar el procesamiento de Vision
+  Then recibo un error de validación que explica la configuración inválida
+```
+
+### 4. Crear esquemas Pydantic para Cameras
+
+**Prioridad:** Must Have (MH)
+
+**Dificulta d:** 2 Story Points
+
+**As a** desarrollador de la API, **I want to** tener los esquemas Pydantic para la entidad Camera, **So that** la API pueda validar la creación y actualización de cámaras asociadas a una tienda.
+
+```gherkin
+Scenario: Validar creación de cámara con datos correctos
+  Given un payload JSON con "name" y "source_type"
+  When se procesa con el modelo de creación de cámara
+  Then la validación es exitosa.
+
+Scenario: Rechazar cámara sin campos obligatorios
+  Given un payload JSON que omite "name" o "source_type"
+  When se procesa con el modelo
+  Then Pydantic devuelve ValidationError.
+```
+
 ## 3. Gestión de Tiendas (Stores CRUD)
 
 **Prioridad:** Must Have (MH)
 
 **Dificultad:** 3 Story Points
 
-**As** Desarrollador de la API, 
-**I want to** registrar, consultar, actualizar y desactivar tiendas, 
-**So that** pueda estructurar y agrupar las cámaras analíticas por sucursal física.
-
-### Criterios de Aceptación (Gherkin)
+**As** Desarrollador de la API, **I want to** registrar, consultar, actualizar y desactivar tiendas, **So that** pueda estructurar y agrupar las cámaras analíticas por sucursal física.
 
 ```gherkin
 Scenario: Crear una tienda nueva con los datos mínimos
@@ -261,30 +326,8 @@ Scenario: Rechazar creación de tienda sin nombre
   When se envía una petición POST a /stores
   Then Pydantic rechaza la petición
   And la API responde con un error 422 Unprocessable Entity.
-
----
-
-### Feature: Crear esquemas Pydantic para Cameras
-
-**Prioridad:** Must Have (MH)
-
-**Dificulta d:** 2 Story Points
-
-**As a** desarrollador de la API, **I want to** tener los esquemas Pydantic para la entidad Camera, **So that** la API pueda validar la creación y actualización de cámaras asociadas a una tienda.
-
-```gherkin
-Scenario: Validar creación de cámara con datos correctos
-  Given un payload JSON con "name" y "source_type"
-  When se procesa con el modelo de creación de cámara
-  Then la validación es exitosa.
-
-Scenario: Rechazar cámara sin campos obligatorios
-  Given un payload JSON que omite "name" o "source_type"
-  When se procesa con el modelo
-  Then Pydantic devuelve ValidationError.
 ```
 
-### Feature: Crear esquema Pydantic VideoResult para métricas agregadas
 ### 2. Crear esquema Pydantic VideoResult para métricas agregadas
 
 **Prioridad:** Must Have (MH)
@@ -304,8 +347,6 @@ Scenario: Rechazar resultado con datos faltantes o incorrectos
   When se procesa con el modelo VideoResult
   Then Pydantic devuelve un error de validación ValidationError.
 ```
-
----
 
 ## 1. Detectar personas en video de demostración
 

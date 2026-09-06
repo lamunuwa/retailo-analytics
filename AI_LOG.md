@@ -42,7 +42,6 @@ Se rechazó modificar el router de producción durante la fase RED, porque habr�
 
 **Validación:** La secuencia TDD cubrió primero el fallo por `AttributeError` del repositorio y el `405 Method Not Allowed` del router, y después la implementación mínima necesaria para convertir ambos escenarios en GREEN. La prueba del repositorio verifica el cambio de estado y las operaciones de sesión; la prueba del router verifica la inyección del mock, el contrato HTTP `200` y la serialización del nombre actualizado. El flujo final conserva el manejo de `404` cuando la tienda no existe y mantiene intactas las operaciones existentes de creación, listado y borrado lógico.
 
-
 ## [2026-09-02] Fase de setup y corrección de IA para CRUD de Stores
 
 **Quién:** @aleixscarbo | Aleixs Carbonell
@@ -85,9 +84,85 @@ Se rechazó modificar el router de producción durante la fase RED, porque habr�
 
 **Validación:** Se verificó que `soft_delete_store` cambiaba `is_active` a `False` y devolvía `200 OK`, mientras que el escenario sin nombre devolvía `422` sin necesidad de mocks del repositorio. La validación mostró que la solución de arquitectura era coherente con el dominio y con las buenas prácticas de FastAPI, SQLAlchemy y Pydantic.
 
-## [2026-08-31] Generacion de un ejemplo de test para vision
+## [2026-09-02] Ejecución de módulos
 
-**Quién:** LaMunuwa | Anna Valentina
+**Quién:** @LaMunuwa | Anna Valentina
+
+**Herramienta:** ChatGPT
+
+**Qué se pidió:** Simple, ejecutar lo que encontró en el prompt anterior.
+
+> Dejame ayudarte con algunos puntos.
+>
+> 1. En el primero tienes razon, justo es lo que pense al crearlo, son 300 lineas de codigo para un modulo, pensaba que era mucho. Con respecto a esto no quiero tantos directorios, divideme el archivo en 4 modulos, `detection.py`, `counting.py`, `visualization.py` y `session.py`.
+> 2. Aqui mencionas que es mejor upgradear mi zonecounter por otra forma y dejar el terreno listo para bytetracker, lo cual es correcto pero no es el punto de esta revision, lo voy a guardar y lo ejecutare como ADR cuando llegue el momento. por ahora dejalo asi por que ahora mismo funciona, vamos por pasos.
+> 3. No entendi este punto, repitelo con mas cuidado y mejor explicacion.
+> 4. Lo se, recuerda que el workflow es: generamos un modelo visual, con cv2.show para fines practicos, una vez eso funcione lo pasamos a un modelo headless
+> 5. No es importante
+>
+> Sabiendo esto, haras lo siguiente:
+>
+> - Generaras los archivos que mencione en el punto 1 (`detection.py`, `counting.py`, `visualization.py` y `session.py`.) para dividir responsabilidades
+> - Explicaras el punto 3
+> - Una vez tengas todo funcional lo validaras con pytest-cov, para esto iniciaras el .venv, por que ahi esta instalado todo.
+
+**Qué se generó / propuso:** Primero que nada, me explicó el punto 3. Hablaba acerca de un error de hardcodeo en una función que tenía; no es un problema en este momento, pero podría escalar al momento de hacer el contrato con la API (realmente, primero edito, luego explico, pero esto es en el resumen).
+
+Posteriormente, genero los archivos que mencioné en el punto 1 (`detection.py`, `counting.py`, `visualization.py` y `session.py`.) para dividir responsabilidades.
+
+Al final, cuando intentó ejecutar pytest, se dio cuenta de que los directorios de sus tests habían quedado obsoletos y los actualizó a los nuevos módulos.
+
+**Qué se aceptó y qué se rechazó, y por qué:** Conforme iba creando, iba revisando; tengo la opción de generación más estricta que permite Codex. Todo lo acepté; no hizo más que cortar y pegar código en nuevos archivos .py y cambiar paths.
+
+**Validación:** Primero, él comentó que su pytest, ruff y mypy pasaron bien, pytest con 99.44% de cobertura. Luego verifiqué y efectivamente pasa así y, por último, ejecuté `python -m vision.src.main` y corrió como antes del refactor.
+
+## [2026-09-02] Revisión de nuevos módulos para YOLO
+
+**Quién:** @LaMunuwa | Anna Valentina
+
+**Herramienta:** ChatGPT
+
+**Qué se pidió:** Después de hacer varios "frankestains" para los módulos, necesitaba una revisión que validara que implementé todo correctamente, no por pytest o linters, sino por la infraestructura del código y su legibilidad. Use este prompt:
+
+> Hice un gran feature para la parte de vision del proyecto. Mira, genere `modules` dentro de `vision/src/`, este parte todas las responsabilidades en modulos para que funcione el modelo de YOLO, agregue zonas ROI y deteccion de personas basico, no tiene ByteTrack ni nada, solo cuenta por frame (ineficiente pero util).
+>
+> Necesito que revises archivo por archivo si se cumple lo de dividir modulo o si hay algun modulo que hace mas de una cosa y que podria ser mas legible partirlos en 2, 3, etc. Que tenga logica.
+>
+> Auxi es un modulo extra, ese no lo toques. Es una copia y pega de uno que tenia y lo usare proximamente.
+>
+> Al final entregame un resumen de lo encontrado.
+
+**Qué se generó / propuso:** 5 puntos, resumidamente fueron estos:
+
+1. Mi archivo `detection.py`, lo que llamo mi "frankestain", efectivamente tenía mucha información; específicamente, hallo 5 módulos que podían ser repartidos entre más`.py` para mejorar la arquitectura de código.
+2. Mencionó que una clase mía llamada `ZoneCounter` detectaba personas por frame, lo cual es ineficiente; lo mejor es dejar el terreno listo para un posible ByteTrack.
+3. Un punto que no entendí (le pedí explicarlo después).
+4. Interfaz incompatible. Me recalcó que el contenedor descarga headless y estoy usando cv2.show.
+5. Errores mínimos de tipado o de semántica.
+
+**Qué se aceptó y qué se rechazó, y por qué:** Acepté 1 de los 5 puntos, el no. 1, los demás, no los perdí de vista; los anoté para futuros refactors o features.
+
+**Validación:** Aquí fue solo lectura, después son los prompts importantes.
+
+## [2026-09-01] Ayuda con unittest.mock en los test de US 3 y 4
+
+**Quién:** @LaMunuwa | Anna Valentina
+
+**Herramienta:** ChatGPT
+
+**Qué se pidió:** Estoy intentando comprender unittest.mock; sin embargo, no termino de acertar en todas las pruebas; muchas me tiran error. En este punto necesitaba terminar; llevaba un día entero sin avanzar + otras actividades. Use este prompt:
+
+> Dentro de `tests/vision/` genere alrededor de 14 test para empezar a programar los nuevos modulos. Me estoy frustando mucho por unittest.mock, la idea de los test ya esta plasmada, algunos ya no me tiran error, pero hay otros (en especial el ultimo) que no termino de arreglar. Integra bien esta libreria a los test que la necesiten, los test estan generados a base de BACKLOG.md, en la US 3 y 4.
+
+**Qué se generó / propuso:** Genero el típico plan que siempre me hace de qué test va a cambiar.
+
+**Qué se aceptó y qué se rechazó, y por qué:** Sinceramente, no rechacé nada, tampoco me di a la amplia tarea de revisar la ejecución. Simplemente, que no hubiera errores o warnings; me di por servida.
+
+**Validación:** No encontrar errores o warnings, después de agregar la lógica, será ejecutar pytest y revisar.
+
+## [2026-08-31] Generación de un ejemplo de test para visión
+
+**Quién:** @LaMunuwa | Anna Valentina
 
 **Herramienta:** ChatGPT
 
@@ -103,9 +178,9 @@ Se rechazó modificar el router de producción durante la fase RED, porque habr�
 
 **Validación:** Ejecutar `pytest` o `pytest vision` y ver que pase, asi mismo investigar de que se trata `unittest.mock`.
 
-## [2026-08-30] Redaccion de BACKLOG.md
+## [2026-08-30] Redacción de BACKLOG.md
 
-**Quién:** LaMunuwa | Anna Valentina
+**Quién:** @LaMunuwa | Anna Valentina
 
 **Herramienta:** ChatGPT
 
@@ -206,7 +281,7 @@ Se rechazó modificar el router de producción durante la fase RED, porque habr�
 
 ## [2026-08-29] Revision del repositorio
 
-**Quién:** LaMunuwa | Anna Valentina
+**Quién:** @LaMunuwa | Anna Valentina
 
 **Herramienta:** ChatGPT
 
@@ -229,11 +304,3 @@ Se rechazó modificar el router de producción durante la fase RED, porque habr�
 **Validación:** Revisé archivo por archivo; en los `Dockerfiles` y en el `docker-compose.yml` me parece que hizo un excelente trabajo, es legible y cumple con lo que mencionaba; lo mismo pasa con los `requirements.txt` aunque aquí le faltaron algunas librerías como NumPy, que yo uso para trabajar en visión artificial. Intentaré trabajar solo con las que puso, esperando que sea un flujo más eficiente.
 
 El único lugar donde podría argumentar que falló fue en `.dockerignore` porque no puso ningún tipo de orden, solo escribió cosas; aproveché eso para borrarlo y copiar y pegar lo que tenía en SensorHub.
-
-## [2026-09-05] Aplicación del Principio de Inversión de Dependencias en Stores
-
-**Contexto:** Se atendieron los Puntos 3 y 4 del Peer Review mediante la aplicación de la letra D de SOLID: el Principio de Inversión de Dependencias.
-
-**Acción:** Se creó `StoreRepositoryProtocol` en la capa de datos con el contrato del repositorio y se refactorizó el Router para inyectar esta abstracción en lugar de depender directamente de la implementación concreta basada en SQLAlchemy.
-
-**Criterio Técnico:** La decisión desacopla las capas superiores de la infraestructura de base de datos, estandariza el código con las convenciones previas del equipo y facilita la creación futura de Fakes en memoria para las pruebas, reduciendo la dependencia de `MagicMock`.
