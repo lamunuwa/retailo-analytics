@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, status
@@ -28,10 +29,7 @@ def ingest_detection(
     event: DetectionEventCreate,
     service: Annotated[AnalyticsService, Depends(get_analytics_service)],
 ) -> DetectionEventResponse:
-    """
-    Recibe las métricas de conteo de personas, las persiste en base de datos
-    y retorna el acuse de recibo.
-    """
+    """Recibe las métricas de conteo de personas y las persiste."""
     db_event = service.register_detection(event)
     return DetectionEventResponse(
         camera_id=db_event.camera_id,  # type: ignore[arg-type]
@@ -40,3 +38,21 @@ def ingest_detection(
         timestamp=db_event.timestamp,  # type: ignore[arg-type]
         status="received",
     )
+
+
+@router.get("/detections", response_model=list[DetectionEventResponse])
+def get_detections( #mambo mambo
+    service: Annotated[AnalyticsService, Depends(get_analytics_service)],
+) -> Sequence[DetectionEventResponse]:
+    """Lista todos los eventos de detección almacenados."""
+    db_events = service.get_detections()
+    return [
+        DetectionEventResponse(
+            camera_id=e.camera_id,  # type: ignore[arg-type]
+            zone_name=e.zone_name,  # type: ignore[arg-type]
+            people_count=e.people_count,  # type: ignore[arg-type]
+            timestamp=e.timestamp,  # type: ignore[arg-type]
+            status="received",
+        )
+        for e in db_events
+    ]

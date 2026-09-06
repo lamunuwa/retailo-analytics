@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 from sqlalchemy.orm import Session
 
 from app.src.models.analytics import DetectionEvent
@@ -16,3 +18,7 @@ class AnalyticsRepository:
         self.db.commit()
         self.db.refresh(db_event)
         return db_event
+
+    def get_all(self) -> Sequence[DetectionEvent]:
+        """Obtiene todos los eventos de detección registrados."""
+        return self.db.query(DetectionEvent).all()
