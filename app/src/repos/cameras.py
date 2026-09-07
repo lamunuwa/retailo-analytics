@@ -35,6 +35,9 @@ class CameraRepositoryProtocol(Protocol):
         """Actualiza de forma parcial los atributos de una cámara existente."""
         ...
 
+    def soft_delete(self, camera_id: int) -> CameraModel | None:
+        ...
+
 
 class CameraRepository:
     """Implementación concreta del repositorio de cámaras utilizando SQLAlchemy."""
@@ -96,6 +99,16 @@ class CameraRepository:
         if is_active is not None:
             camera.is_active = is_active
             
+        self.session.commit()
+        self.session.refresh(camera)
+        return camera
+
+    def soft_delete(self, camera_id: int) -> CameraModel | None:
+        """Realiza un borrado lógico marcando is_active como False en la cámara."""
+        camera = self.session.get(CameraModel, camera_id)
+        if camera is None:
+            return None
+        camera.is_active = False
         self.session.commit()
         self.session.refresh(camera)
         return camera

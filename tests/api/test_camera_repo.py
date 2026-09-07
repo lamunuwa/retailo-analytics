@@ -54,3 +54,17 @@ def test_camera_repository_updates_camera() -> None:
     mock_session.commit.assert_called_once()
     mock_session.refresh.assert_called_once_with(camera_mock)
     assert updated is camera_mock
+
+def test_camera_repository_soft_deletes_camera() -> None:
+    #añade la prueba para el borrado lógico en el repositorio
+    mock_session = MagicMock()
+    camera_mock = CameraModel(id=1, store_id=5, name="Cámara a borrar", source_type="demo_video", is_active=True)
+    mock_session.get.return_value = camera_mock
+    repo = CameraRepository(session=mock_session)
+    
+    deleted = repo.soft_delete(camera_id=1)
+    
+    assert camera_mock.is_active is False
+    mock_session.commit.assert_called_once()
+    mock_session.refresh.assert_called_once_with(camera_mock)
+    assert deleted is camera_mock
