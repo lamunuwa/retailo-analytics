@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from app.src.routers import stores
 from app.src.routers.analytics import router as analytics_router
 
 app = FastAPI(
@@ -8,6 +9,7 @@ app = FastAPI(
     version="1.0.0",
 )
 
+app.include_router(stores.router)
 app.include_router(analytics_router)
 
 
