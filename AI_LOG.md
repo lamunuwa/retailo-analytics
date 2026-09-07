@@ -8,6 +8,20 @@ El orden de registro es ascendente. En la parte superior estará el registro má
 
 ---
 
+## [2026-09-07] Division de main.py y runtime.py
+
+**Quién:** @LaMunuwa | Anna Valentina
+
+**Herramienta:** ChatGPT
+
+**Qué se pidió:** Generé una optimización usando ByteTracker; esto hizo que contaminara de nuevo main.py. Por cada feature o refactor, siempre terminaba ensuciando ese archivo. Entonces busqué con Gemini una forma de separar código de capas, igual que en la API. Me explicó que se podía generar un runtime.py y main.py, para que se pueda ejecutar el código de la capa de servicios en un entorno de desarrollo local. Esto permitirá que los desarrolladores puedan trabajar en el código de la capa de Servicios sin tener que ejecutar el código de la capa de Datos en un entorno de desarrollo local. Use este prompt, fue en ChatGPT, aunque la solucion fue planteada por Gemini web:
+
+> Revisa toda la carpeta de src dentro de vision/. Quiero que veas todos los modulos y main.py, apartir de eso crea un archivo en la raiz de src llamado runtime.py para dividir capas, en ese archivo meteras todos los def que veas sean parte del entorno de desarrollo mas que modulos, por ejemplo inicializaciones.
+>
+> Una vez los tengas ejecuta el entorno virtual y pytest para revisar que siga siendo compatible todo el entorno con el nuevo archivo.
+
+**Qué se generó / propuso:**
+
 ## [2026-09-05] Resolución de Peer Review: defensa de la arquitectura de Stores
 
 **Quién:** @aleixscarbo | Aleixs Carbonell
