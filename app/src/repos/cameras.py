@@ -14,6 +14,8 @@ class CameraRepositoryProtocol(Protocol):
         ...
     def get_all_by_store(self, store_id: int) -> list[CameraModel]:
         ...
+    def get_by_id(self, camera_id: int) -> CameraModel | None:
+        ...
 
 class CameraRepository:
     def __init__(self, session: Session) -> None:
@@ -43,3 +45,6 @@ class CameraRepository:
             CameraModel.is_active.is_(True)
         )
         return list(self.session.scalars(stmt).all())
+
+    def get_by_id(self, camera_id: int) -> CameraModel | None:
+        return self.session.get(CameraModel, camera_id)

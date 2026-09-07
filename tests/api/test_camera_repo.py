@@ -28,3 +28,15 @@ def test_camera_repository_lists_cameras_by_store() -> None:
     cameras = repo.get_all_by_store(store_id=5)
     assert len(cameras) == 1
     assert cameras[0].name == "Cámara 1"
+
+def test_camera_repository_gets_camera_by_id() -> None: 
+    #agrega la prueba unitaria para verificar la búsqueda por ID en el repositorio
+    mock_session = MagicMock()
+    camera_mock = CameraModel(id=1, store_id=5, name="Cámara 1", source_type="demo_video")
+    mock_session.get.return_value = camera_mock
+    repo = CameraRepository(session=mock_session)
+    
+    result = repo.get_by_id(camera_id=1)
+    
+    assert result == camera_mock
+    mock_session.get.assert_called_once_with(CameraModel, 1)
