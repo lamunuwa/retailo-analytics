@@ -40,3 +40,17 @@ def test_camera_repository_gets_camera_by_id() -> None:
     
     assert result == camera_mock
     mock_session.get.assert_called_once_with(CameraModel, 1)
+
+def test_camera_repository_updates_camera() -> None:
+    #grega la prueba para el método de actualización del repositorio
+    mock_session = MagicMock()
+    camera_mock = CameraModel(id=1, store_id=5, name="Nombre Viejo", source_type="demo_video", is_active=True)
+    mock_session.get.return_value = camera_mock
+    repo = CameraRepository(session=mock_session)
+    
+    updated = repo.update(camera_id=1, name="Nombre Nuevo")
+    
+    assert camera_mock.name == "Nombre Nuevo"
+    mock_session.commit.assert_called_once()
+    mock_session.refresh.assert_called_once_with(camera_mock)
+    assert updated is camera_mock
