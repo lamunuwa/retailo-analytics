@@ -64,3 +64,13 @@ def update_camera(
     if camera is None:
         raise HTTPException(status_code=404, detail="Camera not found")
     return camera
+
+@router.delete("/cameras/{camera_id}", response_model=CameraRead)
+def soft_delete_camera(
+    camera_id: int,
+    repo: Annotated[CameraRepositoryProtocol, Depends(get_camera_repository)],
+) -> CameraModel:
+    camera = repo.soft_delete(camera_id=camera_id)
+    if camera is None:
+        raise HTTPException(status_code=404, detail="Camera not found")
+    return camera

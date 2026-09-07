@@ -114,3 +114,23 @@ def test_update_camera_endpoint() -> None:
     assert response.json()["name"] == "Cámara Actualizada"
     
     app.dependency_overrides.clear()
+
+def test_soft_delete_camera_endpoint() -> None:
+    #agrega la prueba para el endpoint de borrado 
+    mock_repo = MagicMock()
+    mock_repo.soft_delete.return_value = CameraModel(
+        id=1, 
+        store_id=5, 
+        name="Cámara a borrar", 
+        source_type="demo_video",
+        is_active=False,
+        created_at=datetime.now(UTC)
+    )
+    app.dependency_overrides[get_camera_repository] = lambda: mock_repo
+    client = TestClient(app)
+    
+    response = client.delete("/cameras/1")
+    assert response.status_code == 200
+    assert response.json()["is_active"] is False
+    
+    app.dependency_overrides.clear()
