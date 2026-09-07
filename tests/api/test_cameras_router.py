@@ -1,0 +1,40 @@
+from datetime import UTC, datetime
+from unittest.mock import MagicMock
+from fastapi.testclient import TestClient
+
+from app.src.main import app
+from app.src.models.cameras import CameraModel
+from app.src.routers.cameras import get_camera_repository
+
+def test_create_camera_endpoint() -> None:
+    # 1. Configurar el Mock con una fecha válida para created_at
+    mock_repo = MagicMock()
+    mock_repo.create.return_value = CameraModel(
+        id=1, 
+        store_id=5, 
+        name="Cámara Pasillo", 
+        source_type="demo_video",
+        is_active=True,
+        created_at=datetime.now(UTC)
+    )
+    
+    # Reemplazar la dependencia real por el mock
+    app.dependency_overrides[get_camera_repository] = lambda: mock_repo
+    client = TestClient(app)
+    
+    # 2. Ejecutar la petición
+    response = client.post(
+        "/stores/5/cameras", 
+        json={"name": "Cámara Pasillo", "source_type": "demo_video"}
+    )
+    
+    # 3. Validaciones
+    assert response.status_code == 201
+    data = response.json()
+    assert data["id"] == 1
+    assert data["store_id"] == 5
+    assert data["name"] == "Cámara Pasillo"
+    assert data["is_active"] is True
+    
+    # Limpiar overrides
+    app.dependency_overrides.clear()
