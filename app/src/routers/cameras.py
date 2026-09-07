@@ -26,3 +26,10 @@ def create_camera(
         source_type=payload.source_type,
         description=payload.description,
     )
+
+@router.get("/stores/{store_id}/cameras", response_model=list[CameraRead])
+def list_cameras(
+    store_id: int,
+    repo: Annotated[CameraRepositoryProtocol, Depends(get_camera_repository)],
+) -> list[CameraModel]:
+    return repo.get_all_by_store(store_id=store_id)

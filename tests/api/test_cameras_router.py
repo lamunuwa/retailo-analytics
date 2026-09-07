@@ -38,3 +38,26 @@ def test_create_camera_endpoint() -> None:
     
     # Limpiar overrides
     app.dependency_overrides.clear()
+
+def test_list_cameras_endpoint() -> None:
+    mock_repo = MagicMock()
+    mock_repo.get_all_by_store.return_value = [
+        CameraModel(
+            id=1, 
+            store_id=5, 
+            name="Cámara Pasillo", 
+            source_type="demo_video",
+            is_active=True,
+            created_at=datetime.now(UTC)
+        )
+    ]
+    app.dependency_overrides[get_camera_repository] = lambda: mock_repo
+    client = TestClient(app)
+    
+    response = client.get("/stores/5/cameras")
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["name"] == "Cámara Pasillo"
+    
+    app.dependency_overrides.clear()
