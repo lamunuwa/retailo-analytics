@@ -1,5 +1,6 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends, status
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from app.src.core.db import get_db
@@ -33,3 +34,13 @@ def list_cameras(
     repo: Annotated[CameraRepositoryProtocol, Depends(get_camera_repository)],
 ) -> list[CameraModel]:
     return repo.get_all_by_store(store_id=store_id)
+
+@router.get("/cameras/{camera_id}", response_model=CameraRead)
+def get_camera(
+    camera_id: int,
+    repo: Annotated[CameraRepositoryProtocol, Depends(get_camera_repository)],
+) -> CameraModel:
+    camera = repo.get_by_id(camera_id=camera_id)
+    if camera is None:
+        raise HTTPException(status_code=404, detail="Camera not found")
+    return camera

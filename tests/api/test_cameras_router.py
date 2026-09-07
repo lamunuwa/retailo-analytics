@@ -61,3 +61,36 @@ def test_list_cameras_endpoint() -> None:
     assert data[0]["name"] == "Cámara Pasillo"
     
     app.dependency_overrides.clear()
+
+def test_get_camera_by_id_endpoint() -> None:
+    mock_repo = MagicMock()
+    mock_repo.get_by_id.return_value = CameraModel(
+        id=1, 
+        store_id=5, 
+        name="Cámara Principal", 
+        source_type="demo_video",
+        is_active=True,
+        created_at=datetime.now(UTC)
+    )
+    app.dependency_overrides[get_camera_repository] = lambda: mock_repo
+    client = TestClient(app)
+    
+    response = client.get("/cameras/1")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["id"] == 1
+    assert data["name"] == "Cámara Principal"
+    
+    app.dependency_overrides.clear()
+
+def test_get_camera_not_found_returns_404() -> None:
+    mock_repo = MagicMock()
+    mock_repo.get_by_id.return_value = None
+    app.dependency_overrides[get_camera_repository] = lambda: mock_repo
+    client = TestClient(app)
+    
+    response = client.get("/cameras/999")
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Camera not found"
+    
+    app.dependency_overrides.clear()
