@@ -35,7 +35,9 @@ def temp_zone() -> RoiZone:
         points=((0, 0), (100, 0), (100, 100), (0, 100)),
     )
 
+
 # Funcionamiento correcto -----------------------------
+
 
 def test_get_device_cpu_when_cuda_is_unavailable() -> None:
     with patch.object(
@@ -107,9 +109,11 @@ def test_main_ok_uses_configured_zones_and_reports_counts(
     assert "Personas detectadas: 1" in output
     assert "entrada: 1" in output
 
+
 # -----------------------------------------------------
 
 # PersonDetection -------------------------------------
+
 
 def test_floor_position_ok() -> None:
     person = PersonDetection(
@@ -120,6 +124,7 @@ def test_floor_position_ok() -> None:
     )
 
     assert person.floor_position == (20.0, 40.0)
+
 
 # -----------------------------------------------------
 
@@ -162,9 +167,7 @@ def test_person_detector_ok_converts_yolo_results_to_detection_frames() -> None:
         verbose=False,
     )
 
-    assert frames[0].people == (
-        PersonDetection(1.0, 2.0, 3.0, 4.0),
-    )
+    assert frames[0].people == (PersonDetection(1.0, 2.0, 3.0, 4.0),)
     assert frames[0].image is not image
 
 
@@ -199,9 +202,11 @@ def test_person_detector_skips_missing_images_and_supports_empty_boxes() -> None
     assert len(frames) == 1
     assert frames[0].people == ()
 
+
 # -----------------------------------------------------
 
 # ZoneCounter -----------------------------------------
+
 
 def test_zone_counter_ok_assigns_people_and_accumulates_counts(
     temp_zone: RoiZone,
@@ -243,9 +248,11 @@ def test_zone_counter_counts_returns_a_copy(
 
     assert counter.counts == {"entrada": 0}
 
+
 # -----------------------------------------------------
 
 # Zonas ROI -------------------------------------------
+
 
 def test_validate_zone_points_requires_three_points() -> None:
     try:
@@ -256,9 +263,7 @@ def test_validate_zone_points_requires_three_points() -> None:
     except ValueError as error:
         assert "invalida" in str(error)
     else:
-        raise AssertionError(
-            "La zona debe requerir al menos tres puntos"
-        )
+        raise AssertionError("La zona debe requerir al menos tres puntos")
 
 
 def test_build_zones_ok() -> None:
@@ -291,13 +296,13 @@ def test_build_zones_requires_at_least_one_zone() -> None:
     except ValueError as error:
         assert str(error) == "Se requiere al menos una zona ROI"
     else:
-        raise AssertionError(
-            "Se debe requerir al menos una zona"
-        )
+        raise AssertionError("Se debe requerir al menos una zona")
+
 
 # -----------------------------------------------------
 
 # DetectionVisualizer ---------------------------------
+
 
 def test_detection_visualizer_ok_shows_frame_and_closes_windows(
     temp_zone: RoiZone,
@@ -315,19 +320,13 @@ def test_detection_visualizer_ok_shows_frame_and_closes_windows(
     )
 
     with (
-        patch(
-            "vision.src.modules.visualization.cv2.namedWindow"
-        ) as named_window,
-        patch(
-            "vision.src.modules.visualization.cv2.imshow"
-        ) as imshow,
+        patch("vision.src.modules.visualization.cv2.namedWindow") as named_window,
+        patch("vision.src.modules.visualization.cv2.imshow") as imshow,
         patch(
             "vision.src.modules.visualization.cv2.waitKey",
             return_value=ord("q"),
         ),
-        patch(
-            "vision.src.modules.visualization.cv2.destroyAllWindows"
-        ) as destroy_windows,
+        patch("vision.src.modules.visualization.cv2.destroyAllWindows") as destroy_windows,
     ):
         visualizer = DetectionVisualizer((temp_zone,))
 
@@ -351,9 +350,11 @@ def test_detection_visualizer_ok_shows_frame_and_closes_windows(
 
     assert should_exit
 
+
 # -----------------------------------------------------
 
 # Sesion de deteccion ---------------------------------
+
 
 def test_run_detection_ok_collects_metrics(
     temp_zone: RoiZone,
@@ -401,5 +402,6 @@ def test_run_detection_ok_collects_metrics(
     assert result.processed_frames == 1
     assert result.detected_people == 1
     assert result.detections_by_zone == {"entrada": 1}
+
 
 # -----------------------------------------------------

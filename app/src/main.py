@@ -1,8 +1,6 @@
 from fastapi import FastAPI
 
-from app.src.routers import stores
-
-from app.src.routers import cameras
+from app.src.routers import cameras, stores
 
 app = FastAPI(title="Retailo Analytics API")
 

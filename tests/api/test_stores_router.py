@@ -32,9 +32,7 @@ def test_create_store_endpoint() -> None:
 
 def test_list_active_stores_endpoint() -> None:
     mock_repo = MagicMock()
-    mock_repo.get_all_active.return_value = [
-        StoreModel(id=1, name="Tienda Activa", is_active=True)
-    ]
+    mock_repo.get_all_active.return_value = [StoreModel(id=1, name="Tienda Activa", is_active=True)]
 
     app.dependency_overrides[get_store_repository] = lambda: mock_repo
 
@@ -50,9 +48,7 @@ def test_list_active_stores_endpoint() -> None:
 
 def test_soft_delete_store_endpoint() -> None:
     mock_repo = MagicMock()
-    mock_repo.soft_delete.return_value = StoreModel(
-        id=1, name="Tienda a borrar", is_active=False
-    )
+    mock_repo.soft_delete.return_value = StoreModel(id=1, name="Tienda a borrar", is_active=False)
 
     app.dependency_overrides[get_store_repository] = lambda: mock_repo
 
@@ -75,9 +71,7 @@ def test_create_store_without_name_returns_422() -> None:
 
 def test_update_store_endpoint() -> None:
     mock_repo = MagicMock()
-    mock_repo.update.return_value = StoreModel(
-        id=1, name="Nombre Nuevo", is_active=True
-    )
+    mock_repo.update.return_value = StoreModel(id=1, name="Nombre Nuevo", is_active=True)
 
     app.dependency_overrides[get_store_repository] = lambda: mock_repo
 

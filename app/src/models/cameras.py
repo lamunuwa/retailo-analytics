@@ -1,10 +1,11 @@
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.src.core.db import Base
+
 
 class CameraModel(Base):
     __tablename__ = "cameras"

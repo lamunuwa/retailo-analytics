@@ -36,6 +36,7 @@ class RoiZone:
 
 # funciones de apoyo ---------------------------------------
 
+
 def validate_zone_points(
     zone_name: str,
     zone_points: Sequence[Point],
@@ -43,9 +44,7 @@ def validate_zone_points(
     """Valida que una zona tenga los puntos minimos para formar una zona (poligono)"""
 
     if len(zone_points) < 3:
-        raise ValueError(
-            f"La zona '{zone_name}' debe tener al menos 3 puntos"
-        )
+        raise ValueError(f"La zona '{zone_name}' debe tener al menos 3 puntos")
 
 
 def build_zones(
@@ -75,5 +74,6 @@ def get_configured_zones() -> tuple[RoiZone, ...]:
 
     zones = build_zones(DEFAULT_ZONE_COORDINATES)
     return zones
+
 
 # ----------------------------------------------------------
