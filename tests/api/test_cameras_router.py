@@ -94,3 +94,23 @@ def test_get_camera_not_found_returns_404() -> None:
     assert response.json()["detail"] == "Camera not found"
     
     app.dependency_overrides.clear()
+
+def test_update_camera_endpoint() -> None:
+    #agrega la prueba para el endpoint de actualización
+    mock_repo = MagicMock()
+    mock_repo.update.return_value = CameraModel(
+        id=1, 
+        store_id=5, 
+        name="Cámara Actualizada", 
+        source_type="demo_video",
+        is_active=True,
+        created_at=datetime.now(UTC)
+    )
+    app.dependency_overrides[get_camera_repository] = lambda: mock_repo
+    client = TestClient(app)
+    
+    response = client.patch("/cameras/1", json={"name": "Cámara Actualizada"})
+    assert response.status_code == 200
+    assert response.json()["name"] == "Cámara Actualizada"
+    
+    app.dependency_overrides.clear()
