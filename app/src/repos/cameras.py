@@ -1,5 +1,6 @@
 from typing import Protocol
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 from app.src.models.cameras import CameraModel
 
 class CameraRepositoryProtocol(Protocol):
@@ -10,6 +11,8 @@ class CameraRepositoryProtocol(Protocol):
         source_type: str, 
         description: str | None = None
     ) -> CameraModel:
+        ...
+    def get_all_by_store(self, store_id: int) -> list[CameraModel]:
         ...
 
 class CameraRepository:
@@ -33,3 +36,10 @@ class CameraRepository:
         self.session.commit()
         self.session.refresh(camera)
         return camera
+
+    def get_all_by_store(self, store_id: int) -> list[CameraModel]:
+        stmt = select(CameraModel).where(
+            CameraModel.store_id == store_id,
+            CameraModel.is_active.is_(True)
+        )
+        return list(self.session.scalars(stmt).all())
