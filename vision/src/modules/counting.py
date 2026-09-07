@@ -5,28 +5,33 @@ from vision.src.modules.zones import RoiZone
 
 
 class ZoneCounter:
-    """Zonas ROI y acumula conteos por zona"""
+    """Registra zonas ROI y acumula los conteos de personas"""
 
     def __init__(self, zones: Sequence[RoiZone]) -> None:
         if not zones:
             raise ValueError("Se requiere al menos una zona ROI")
 
         self.zones = tuple(zones)
-        self.counts_by_zone = {zone.name: 0 for zone in self.zones}
+        self.track_ids_by_zone: dict[str, set[int]] = {
+            zone.name: set()
+            for zone in self.zones
+        }
 
     @property
     def counts(self) -> dict[str, int]:
-        """Genera una copia de los conteos acumulados por zona"""
+        """Obtiene una copia de los conteos acumulados por zona"""
 
-        return self.counts_by_zone.copy()
+        counts_by_zone = {
+            zone_name: len(track_ids)
+            for zone_name, track_ids in self.track_ids_by_zone.items()
+        }
 
-    # funciones de apoyo ---------------------------------------
+        return counts_by_zone
 
-    def find_person_zone(
-        self,
-        person: PersonDetection,
-    ) -> RoiZone | None:
-        """Obtiene la primera zona que contiene a la persona detectada"""
+    # Funciones de apoyo ---------------------------------------
+
+    def find_person_zone(self, person: PersonDetection) -> RoiZone | None:
+        """Busca la zona que contiene a una persona detectada"""
 
         for zone in self.zones:
             if zone.contains(person.floor_position):
@@ -38,17 +43,16 @@ class ZoneCounter:
         self,
         people: Sequence[PersonDetection],
     ) -> dict[PersonDetection, RoiZone | None]:
-        """Registra las detecciones por frame y devuelve sus zonas"""
+        """Registra las personas de un frame y devuelve sus zonas"""
 
         assignments: dict[PersonDetection, RoiZone | None] = {}
 
         for person in people:
             assigned_zone = self.find_person_zone(person)
-
             assignments[person] = assigned_zone
 
-            if assigned_zone is not None:
-                self.counts_by_zone[assigned_zone.name] += 1
+            if assigned_zone is not None and person.track_id is not None:
+                self.track_ids_by_zone[assigned_zone.name].add(person.track_id)
 
         return assignments
 

@@ -9,36 +9,56 @@ from vision.src.modules.zones import RoiZone
 
 @dataclass(frozen=True)
 class VideoSession:
-    """Son las metricas generadas durante una sesion (rep del video)"""
+    """Representa las metricas generadas durante una sesion de video"""
 
     started_at: datetime
     finished_at: datetime
     processed_frames: int
     detected_people: int
-    detections_by_zone: dict[str, int]
+    tracked_people: int
+    untracked_detections: int
+    visits_by_zone: dict[str, int]
 
 
 def run_detection(
     device: str,
     zones: Sequence[RoiZone],
-    video_path: str = "vision/data/demo/supermarket.mp4",  # gitignorado
-    model_path: str = "yolov8n.pt",  # gitignorado
+    video_source: str | int = "vision/data/demo/supermarket.mp4",
+    model_path: str = "yolov8n.pt",
+    confidence: float = 0.25,
+    tracker_path: str = "vision/config/bytetrack.yaml",
+    image_size: int = 640,
+    video_stride: int = 1,
 ) -> VideoSession:
-    """Corre la detección de personas"""
+    """Procesa un video y obtiene las metricas de deteccion por zona"""
 
     detector = PersonDetector(
         model_path=model_path,
         device=device,
+        confidence=confidence,
+        tracker_path=tracker_path,
+        image_size=image_size,
+        video_stride=video_stride,
     )
     counter = ZoneCounter(zones)
 
     started_at = datetime.now(UTC)
     processed_frames = 0
     detected_people = 0
+    tracked_people_ids: set[int] = set()
+    untracked_detections = 0
 
-    for frame in detector.detect_in_video(video_path):
+    for frame in detector.detect_in_video(video_source):
         processed_frames += 1
         detected_people += len(frame.people)
+
+        for person in frame.people:
+            if person.track_id is None:
+                untracked_detections += 1
+                continue
+
+            tracked_people_ids.add(person.track_id)
+
         counter.register(frame.people)
 
     session = VideoSession(
@@ -46,7 +66,9 @@ def run_detection(
         finished_at=datetime.now(UTC),
         processed_frames=processed_frames,
         detected_people=detected_people,
-        detections_by_zone=counter.counts,
+        tracked_people=len(tracked_people_ids),
+        untracked_detections=untracked_detections,
+        visits_by_zone=counter.counts,
     )
 
     return session

@@ -38,7 +38,7 @@ services:
       API_TOKEN: ${API_TOKEN:-}
       CAMERA_SOURCE: ${CAMERA_SOURCE:-}
       DEVICE_ID: ${DEVICE_ID:-}
-      MODEL_PATH: ${MODEL_PATH:-/models/yolo11n.pt}
+      MODEL_PATH: ${MODEL_PATH:-yolov8n.pt}
     volumes:
       - vision_models:/models
     restart: unless-stopped
