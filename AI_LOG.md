@@ -20,7 +20,18 @@ El orden de registro es ascendente. En la parte superior estará el registro má
 >
 > Una vez los tengas ejecuta el entorno virtual y pytest para revisar que siga siendo compatible todo el entorno con el nuevo archivo.
 
-**Qué se generó / propuso:**
+**Qué se generó / propuso:** Planifico mover las siguientes def:
+
+- `get_video_source`
+- `get_model_path`
+- `get_tracker_path`
+- `get_device`
+
+También crear `get_runtime_config` para traer el .yml de configuración (este archivo lo da Ultralytics cuando usas ByteTrack simple), y traer toda la lógica de printeo final para dejar en el main solo el ejecutar los módulos y runtime.
+
+**Qué se aceptó y qué se rechazó, y por qué:** Acepté todo en general, menos dejar el main solo para ejecutar todo; ahí decidí dejar toda la configuración de printeo final, esto porque esa lógica de printeo es lo que se convertirá en el contrato con la API para comunicación y eso lo quería tener en el main.py.
+
+**Validación:** Después de que generó el plan, le mencioné la restricción de antes y también le dije que lo probara activando el .venv y ejecutando mypy, ruff, pytest. Al terminar, me dio el resumen y lo probé yo + python -m vision.src.main para ver que la lógica funcionara igual.
 
 ## [2026-09-05] Resolución de Peer Review: defensa de la arquitectura de Stores
 
