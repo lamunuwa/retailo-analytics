@@ -304,3 +304,25 @@ Al final, cuando intentó ejecutar pytest, se dio cuenta de que los directorios 
 **Validación:** Revisé archivo por archivo; en los `Dockerfiles` y en el `docker-compose.yml` me parece que hizo un excelente trabajo, es legible y cumple con lo que mencionaba; lo mismo pasa con los `requirements.txt` aunque aquí le faltaron algunas librerías como NumPy, que yo uso para trabajar en visión artificial. Intentaré trabajar solo con las que puso, esperando que sea un flujo más eficiente.
 
 El único lugar donde podría argumentar que falló fue en `.dockerignore` porque no puso ningún tipo de orden, solo escribió cosas; aproveché eso para borrarlo y copiar y pegar lo que tenía en SensorHub.
+
+## [2026-09-07] Segunda auditoría de código: CRUD de Cámaras en el PR #20
+
+**Quién:** @aleixscarbo | Aleixs Carbonell
+
+**Herramienta:** GitHub Copilot (VS Code) + revisión humana como Tech Lead
+
+**Qué se pidió:** Realizar un Code Review profundo del PR #20, correspondiente al CRUD de Cámaras. Se evaluó el cumplimiento de la Inversión de Dependencias mediante Protocolos y la robustez de los Mocks. El prompt utilizado fue: "Actúa como un Staff Software Engineer extremadamente estricto pero constructivo. Realiza un Code Review profundo de los 5 archivos adjuntos... Verifica Protocolos, Integridad Referencial en Soft Delete y Pruebas con Mocks."
+
+**Qué produjo la IA vs Qué detectó el Humano?:**
+
+- **Hallazgos de la IA:** Detectó un hueco de seguridad lógico en el método `update()` que permitía modificar y revivir cámaras eliminadas. También identificó el antipatrón de "Pruebas Cosméticas", donde los Mocks verificaban respuestas pero no interceptaban los argumentos de entrada mediante `assert_called_once_with`.
+- **Hallazgo del Humano:** Detecté una violación al *Definition of Done*, ya que el autor omitió registrar las User Stories en el `BACKLOG.md` y no documentó el proceso generativo en el `AI_LOG.md`.
+
+**Qué se aceptó y qué se rechazó, y por qué:** Se aceptó el diagnóstico técnico de la IA sobre la posibilidad de modificar o revivir cámaras eliminadas, porque debilita la semántica del Soft Delete y puede comprometer la integridad del estado del recurso. También se aceptó la observación sobre las Pruebas Cosméticas, ya que comprobar únicamente el JSON prefabricado no demuestra que el router transmita correctamente los argumentos al repositorio. Se rechazó considerar suficiente la cobertura declarada por sí sola, porque no sustituye la validación del comportamiento ni el cumplimiento documental del *Definition of Done*. El resultado del Peer Review fue un veredicto de "Request Changes".
+
+**Conclusiones Clave sobre la IA en Code Reviews:**
+
+- La IA demuestra una gran agudeza para auditar la solidez matemática de las pruebas unitarias (*Test Doubles*), detectando cuando un test está escrito para "pasar" y no para "validar".
+- El factor humano sigue siendo el guardián de los procesos de desarrollo; la IA evaluó la calidad del código, pero fui yo quien detectó la ausencia de trazabilidad documental. Se emitió un veredicto de "Request Changes" para blindar el Soft Delete y forzar el cumplimiento del DoD.
+
+**Validación:** Se contrastó la revisión estática de Copilot con la verificación humana del *Definition of Done*. La auditoría confirmó que el PR requería cambios para impedir la reactivación o modificación indebida de cámaras eliminadas, fortalecer las pruebas mediante comprobación de argumentos y completar la trazabilidad de User Stories y del uso de IA. El PR #20 quedó pendiente de cambios hasta corregir los hallazgos técnicos y administrativos.
