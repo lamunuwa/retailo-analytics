@@ -8,6 +8,30 @@ El orden de registro es ascendente. En la parte superior estará el registro má
 
 ---
 
+## [2026-09-08] Correcciones de Peer Review
+
+**Quién:** @LaMunuwa | Anna Valentina
+
+**Herramienta:** ChatGPT
+
+**Qué se pidió:** @aleixscarbo me hizo una review de mi PR #21, me mencionó algunas cosas que yo no sabía cómo hacerlas; realmente investigando, eran optimizaciones aún más allá de lo que yo había hecho, entonces entra como parte del feature. Mencionó lo siguiente:
+
+- `vision/src/modules/session.py` y `counting.py` (Fuga de Memoria)
+  - **Qué observaste:** Los acumuladores `track_ids_by_zone` y `tracked_people_ids` utilizan la estructura `set()` para almacenar todos los IDs únicos vistos. En un despliegue real donde la cámara procese video 24/7, estos conjuntos crecerán infinitamente cada vez que ByteTracker asigne un nuevo ID, provocando un colapso del servidor por falta de memoria RAM (Out-Of-Memory).
+  - **Qué propones:** Es imperativo implementar una política de expiración. Puedes limitar la sesión a ventanas temporales (ej. reiniciar contadores cada hora y guardar el total en BD) o usar un mecanismo de TTL (Time-To-Live) para purgar de la memoria los IDs que no han sido vistos en los últimos X minutos.
+
+- `tests/vision/test_vision.py` (Pruebas Cosméticas de Tracking)
+  - **Qué observaste:** Aunque la cobertura es altísima (+95%), la prueba de `ZoneCounter` (`L178`) registra exactamente el mismo objeto dos veces para validar la deduplicación, y el mock del detector en la sesión devuelve un frame estático. Esto no prueba el comportamiento real del rastreador a través del tiempo.
+  - **Qué propones:** Las pruebas de tracking necesitan movimiento. Simula al menos 3 frames consecutivos donde un ID entra a la zona, permanece, y sale de la zona, para garantizar que la lógica de retención y conteo funciona bajo carga dinámica, no solo con fotos estáticas.
+
+Directamente envié esto a ChatGPT para que me ayudara a solucionarlo; creo que ya era bastante información.
+
+**Qué se generó / propuso:** Únicamente corrigió lo solicitado.
+
+**Qué se aceptó y qué se rechazó, y por qué:** Tuvo una breve alucinación, olvidó que todo esto se está llevando a cabo con videos de supermercados reales antes que con la cámara web de mi laptop y borró eso de la lógica, el buscar el path del video; entonces eliminé eso y solo dejé lo que arreglaba lo mencionado por Aleixs.
+
+**Validación:** Probo activando el .venv y ejecutando mypy, ruff, pytest. Al terminar, me dio el resumen y lo probé yo + python -m vision.src.main para ver que la lógica funcionara igual.
+
 ## [2026-09-07] Division de main.py y runtime.py
 
 **Quién:** @LaMunuwa | Anna Valentina
