@@ -4,6 +4,7 @@ sqlalchemy
 alembic
 psycopg[binary]
 ultralytics
+lap>=0.5.12
 opencv-python
 pytest
 pytest-cov

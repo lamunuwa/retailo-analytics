@@ -225,6 +225,48 @@ El orden de registro es ascendente. En la parte superior estará la US más actu
 
 ## Sprint 1
 
+### 8. Ingesta de eventos de detección de personas
+
+**Prioridad:** Must Have (MH)
+
+**Dificultad:** 3 Story Points
+
+**As** desarrollador del sistema, **I want to** enviar los datos de conteo de personas y zonas a la API mediante un endpoint de ingesta, **So that** el sistema almacene el tráfico de la tienda en tiempo real para su posterior análisis.
+
+```gherkin
+Scenario: Ingesta exitosa de detecciones
+  Given un payload JSON válido con el camera_id, zone_name, people_count y timestamp
+  When el agente envía una petición POST a /analytics/detections
+  Then la API valida los datos, los guarda en la base de datos y responde con código 201 Created.
+
+Scenario: Rechazar métricas incompletas
+  Given un payload JSON que omite la cantidad de personas detectadas o campos obligatorios
+  When el agente envía la petición POST
+  Then la API responde con un error 422 Unprocessable Entity.
+
+```
+
+### 7. Consulta, filtrado avanzado y paginación de detecciones analíticas
+
+**Prioridad:** Must Have (MH)
+
+**Dificultad:** 3 Story Points
+
+**As** desarrollador del sistema, **I want to** consultar y filtrar el historial de detecciones y conteo de personas mediante la API, **So that** el sistema permita la analítica y visualización del tráfico en las diferentes zonas y cámaras de la tienda.
+
+```gherkin
+Scenario: Consulta general de detecciones sin filtros
+  Given que existen eventos de detección registrados en la base de datos
+  When se realiza una petición GET a `/analytics/detections` sin parámetros
+  Then la API responde con código 200 OK y el listado completo de los registros paginados por defecto.
+
+Scenario: Filtrado avanzado y paginación de detecciones
+  Given que se envían parámetros opcionales de filtrado como `camera_id`, `zone_name`, `start_date`, `end_date`, `limit` y `offset`
+  When se realiza una petición GET a `/analytics/detections`
+  Then la API procesa los filtros de manera estricta y devuelve únicamente los registros que coinciden con el criterio en orden descendente por timestamp.
+
+```
+
 ### 6. Detección de personas en zonas específicas
 
 **Prioridad:** Must Have (MH)
@@ -294,7 +336,7 @@ Scenario: Rechazar cámara sin campos obligatorios
   Then Pydantic devuelve ValidationError.
 ```
 
-## 3. Gestión de Tiendas (Stores CRUD)
+### 3. Gestión de Tiendas (Stores CRUD)
 
 **Prioridad:** Must Have (MH)
 
@@ -348,7 +390,7 @@ Scenario: Rechazar resultado con datos faltantes o incorrectos
   Then Pydantic devuelve un error de validación ValidationError.
 ```
 
-## 1. Detectar personas en video de demostración
+### 1. Detectar personas en video de demostración
 
 **Prioridad:** Must Have (MH)
 
