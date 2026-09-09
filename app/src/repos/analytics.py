@@ -32,4 +32,4 @@ class AnalyticsRepository:
             if filters.end_date is not None:
                 query = query.filter(DetectionEvent.timestamp <= filters.end_date)
             query = query.offset(filters.offset).limit(filters.limit)
-        return query.order_by(DetectionEvent.timestamp.desc()).all()
+        return query.order_by(DetectionEvent.timestamp.desc(), DetectionEvent.id.desc())

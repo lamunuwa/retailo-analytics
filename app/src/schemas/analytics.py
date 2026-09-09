@@ -1,6 +1,4 @@
-from datetime import datetime
-
-from pydantic import BaseModel, Field, model_validator
+from pydantic import AwareDatetime, BaseModel, Field, model_validator
 
 
 class DetectionEventCreate(BaseModel):
@@ -9,8 +7,7 @@ class DetectionEventCreate(BaseModel):
     camera_id: int = Field(..., description="ID único de la cámara que reporta")
     zone_name: str = Field(..., description="Nombre de la zona vigilada")
     people_count: int = Field(..., ge=0, description="Cantidad de personas detectadas")
-    timestamp: datetime = Field(..., description="Marca de tiempo UTC del frame")
-
+    timestamp: AwareDatetime = Field(..., description="Marca de tiempo UTC del frame procesado")
 
 class DetectionEventResponse(DetectionEventCreate):
     """Esquema de respuesta tras una ingesta exitosa."""

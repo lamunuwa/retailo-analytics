@@ -8,6 +8,13 @@ El orden de registro es ascendente. En la parte superior estará el registro má
 
 ---
 
+## [2026-09-08] Módulo Analytics Filtering
+**Quién:** @FrankArmed
+**Herramienta:** Gemini (AI Collaborator)
+**Qué se pidió:** Resolución de inestabilidad en la paginación y validación estricta de zona horaria.
+**Qué se generó / propuso:** Uso de `AwareDatetime` en Pydantic y un criterio de desempate en la ordenación (`DetectionEvent.id.desc()`) para SQLAlchemy.
+**Qué se aceptó y qué se rechazó, y por qué:** Se implementó todo para asegurar que bases de datos de series temporales no tengan solapamientos silenciosos de offset.
+
 ## [2026-09-07] Auditoría dual del módulo de Analítica en el PR #18
 
 **Quién:** @aleixscarbo | Aleixs Carbonell
