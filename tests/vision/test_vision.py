@@ -179,9 +179,7 @@ def test_person_detector_skips_invalid_results_and_accepts_missing_ids() -> None
 
 
 def test_zones_can_be_built_and_detect_points() -> None:
-    zones = build_zones(
-        {"entrada": ((0, 0), (100, 0), (100, 100), (0, 100))}
-    )
+    zones = build_zones({"entrada": ((0, 0), (100, 0), (100, 100), (0, 100))})
 
     assert zones[0].contains((50.0, 50.0))
     assert not zones[0].contains((150.0, 50.0))
@@ -196,14 +194,33 @@ def test_zones_require_a_valid_polygon() -> None:
         build_zones({"invalida": ((0, 0), (1, 1))})
 
 
-def test_zone_counter_counts_a_track_once_per_zone() -> None:
-    counter = ZoneCounter((create_zone(),))
-    person = PersonDetection(10.0, 10.0, 20.0, 20.0, track_id=5)
+def test_zone_counter_keeps_one_track_while_it_moves_through_a_zone() -> None:
+    counter = ZoneCounter((create_zone(),), clock=lambda: 0.0)
+    entering = PersonDetection(10.0, 0.0, 20.0, 20.0, track_id=5)
+    staying = PersonDetection(40.0, 20.0, 50.0, 50.0, track_id=5)
+    leaving = PersonDetection(40.0, 100.0, 50.0, 150.0, track_id=5)
 
-    counter.register((person,))
-    counter.register((person,))
+    counter.register((entering,), now=0.0)
+    counter.register((staying,), now=1.0)
+    assignments = counter.register((leaving,), now=2.0)
 
     assert counter.counts == {"entrada": 1}
+    assert assignments == {leaving: None}
+
+
+def test_zone_counter_expires_tracks_that_are_no_longer_seen() -> None:
+    current_time = 0.0
+    counter = ZoneCounter(
+        (create_zone(),),
+        track_ttl_seconds=60.0,
+        clock=lambda: current_time,
+    )
+    person = PersonDetection(10.0, 10.0, 20.0, 20.0, track_id=5)
+
+    counter.register((person,), now=current_time)
+    current_time = 61.0
+
+    assert counter.counts == {"entrada": 0}
 
 
 def test_zone_counter_ignores_people_without_track_or_outside_zone() -> None:
@@ -220,29 +237,51 @@ def test_zone_counter_ignores_people_without_track_or_outside_zone() -> None:
 
 
 def test_session_collects_tracking_metrics() -> None:
-    tracked_person = PersonDetection(1.0, 1.0, 2.0, 2.0, track_id=7)
-    untracked_person = PersonDetection(3.0, 3.0, 4.0, 4.0)
-    frame = DetectionFrame(image=None, people=(tracked_person, untracked_person))
+    entering = PersonDetection(1.0, 1.0, 2.0, 2.0, track_id=7)
+    staying = PersonDetection(3.0, 3.0, 4.0, 4.0, track_id=7)
+    leaving = PersonDetection(3.0, 120.0, 4.0, 140.0, track_id=7)
+    frames = [
+        DetectionFrame(image=None, people=(entering,)),
+        DetectionFrame(image=None, people=(staying,)),
+        DetectionFrame(image=None, people=(leaving,)),
+    ]
 
     detector = MagicMock()
-    detector.detect_in_video.return_value = [frame, frame]
+    detector.detect_in_video.return_value = frames
 
-    counter = MagicMock()
-    counter.counts = {"entrada": 1}
-
-    with (
-        patch.object(session, "PersonDetector", return_value=detector),
-        patch.object(session, "ZoneCounter", return_value=counter),
-    ):
+    with patch.object(session, "PersonDetector", return_value=detector):
         result = session.run_detection(
             device="cpu",
             zones=(create_zone(),),
             video_source="video.mp4",
             model_path="model.pt",
+            clock=iter((0.0, 1.0, 2.0, 2.0)).__next__,
         )
 
-    assert result.processed_frames == 2
-    assert result.detected_people == 4
+    assert result.processed_frames == 3
+    assert result.detected_people == 3
     assert result.tracked_people == 1
-    assert result.untracked_detections == 2
+    assert result.untracked_detections == 0
     assert result.visits_by_zone == {"entrada": 1}
+
+
+def test_session_expires_unseen_tracking_ids() -> None:
+    first_track = PersonDetection(1.0, 1.0, 2.0, 2.0, track_id=7)
+    new_track = PersonDetection(3.0, 3.0, 4.0, 4.0, track_id=8)
+    detector = MagicMock()
+    detector.detect_in_video.return_value = [
+        DetectionFrame(image=None, people=(first_track,)),
+        DetectionFrame(image=None, people=(new_track,)),
+    ]
+
+    with patch.object(session, "PersonDetector", return_value=detector):
+        result = session.run_detection(
+            device="cpu",
+            zones=(create_zone(),),
+            video_source="video.mp4",
+            model_path="model.pt",
+            track_ttl_seconds=60.0,
+            clock=iter((0.0, 61.0, 61.0)).__next__,
+        )
+
+    assert result.tracked_people == 1
