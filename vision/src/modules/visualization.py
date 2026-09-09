@@ -6,16 +6,14 @@ import numpy as np
 from vision.src.modules.detection import DetectionFrame, PersonDetection
 from vision.src.modules.zones import RoiZone
 
-WINDOW_NAME = "Deteccion de personas por zona"
-
 
 class DetectionVisualizer:
-    """Dibuja zonas, conteos y detecciones sobre la ventana de OpenCV."""
+    """Muestra zonas, conteos y personas detectadas mediante OpenCV"""
 
     def __init__(self, zones: Sequence[RoiZone]) -> None:
         self.zones = tuple(zones)
 
-        cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
+        cv2.namedWindow("Deteccion de personas por zona", cv2.WINDOW_NORMAL)
 
     def show(
         self,
@@ -23,38 +21,40 @@ class DetectionVisualizer:
         assignments: dict[PersonDetection, RoiZone | None],
         zone_counts: dict[str, int],
     ) -> bool:
-        """Muestra el frame y devuelve si se solicito salir con la tecla q."""
+        """Muestra un frame y devuelve si se solicito salir"""
 
         image = frame.image
+
+        if image is None:
+            raise ValueError("El frame no contiene una imagen para visualizar")
 
         self.draw_heatmap(image, zone_counts)
         self.draw_people(image, assignments)
 
-        cv2.imshow(WINDOW_NAME, image)
+        cv2.imshow("Deteccion de personas por zona", image)
 
         should_exit = cv2.waitKey(1) & 0xFF == ord("q")
         return should_exit
 
     def close(self) -> None:
-        """Cierra las ventanas creadas por OpenCV."""
+        """Cierra las ventanas creadas por OpenCV"""
 
         cv2.destroyAllWindows()
 
-    # funciones de apoyo ---------------------------------------
+    # Funciones de apoyo ---------------------------------------
 
     def draw_heatmap(
         self,
         image: np.ndarray,
         zone_counts: dict[str, int],
     ) -> None:
-        """Dibuja cada zona con intensidad proporcional a su conteo."""
+        """Dibuja las zonas con intensidad basada en sus conteos"""
 
         highest_count = max(zone_counts.values(), default=0)
         overlay = image.copy()
 
         for zone in self.zones:
             zone_count = zone_counts[zone.name]
-
             intensity = zone_count / highest_count if highest_count else 0.0
 
             color = (
@@ -97,11 +97,17 @@ class DetectionVisualizer:
         image: np.ndarray,
         assignments: dict[PersonDetection, RoiZone | None],
     ) -> None:
-        """Dibuja personas y etiqueta la zona asignada a cada una."""
+        """Dibuja personas y la zona asignada a cada una"""
 
         for person, zone in assignments.items():
             color = (0, 255, 0) if zone is not None else (0, 0, 255)
-            label = zone.name if zone is not None else "sin zona"
+            zone_label = zone.name if zone is not None else "sin zona"
+            track_label = (
+                f"ID {person.track_id}"
+                if person.track_id is not None
+                else "sin track"
+            )
+            label = f"{track_label} - {zone_label}"
 
             cv2.rectangle(
                 image,
@@ -120,3 +126,5 @@ class DetectionVisualizer:
                 color,
                 2,
             )
+
+    # ----------------------------------------------------------
