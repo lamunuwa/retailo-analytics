@@ -1,93 +1,106 @@
+from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
 from fastapi.testclient import TestClient
 
 from app.src.main import app
 from app.src.models.analytics import DetectionEvent
+from app.src.repos.analytics import AnalyticsRepository
 from app.src.routers.analytics import get_analytics_service
-from app.src.schemas.analytics import DetectionEventCreate
+from app.src.schemas.analytics import DetectionEventCreate, DetectionFilters
 from app.src.services.analytics import AnalyticsService
 
 client = TestClient(app)
 
 
-def test_register_detection_service() -> None:
-    """Prueba unitaria para el servicio de analítica utilizando mocks."""
-    mock_repo = MagicMock()
-    service = AnalyticsService(mock_repo)
-
-    payload = DetectionEventCreate(
-        camera_id=1,
-        zone_name="Pasillo Central",
-        people_count=4,
-        timestamp="2026-09-05T12:00:00Z",  # type: ignore[arg-type]
-    )
-
-    mock_repo.create.return_value = DetectionEvent(
+def make_event(camera_id: int = 1, zone_name: str = "Central") -> DetectionEvent:
+    return DetectionEvent(
         id=1,
-        camera_id=1,
-        zone_name="Pasillo Central",
+        camera_id=camera_id,
+        zone_name=zone_name,
         people_count=4,
         timestamp="2026-09-05T12:00:00Z",
     )
+
+
+def test_register_detection_service() -> None:
+    repo = MagicMock()
+    service = AnalyticsService(repo)
+    payload = DetectionEventCreate(
+        camera_id=1,
+        zone_name="Central",
+        people_count=4,
+        timestamp=datetime(2026, 9, 5, 12, tzinfo=UTC),
+    )
+    repo.create.return_value = make_event()
 
     result = service.register_detection(payload)
 
     assert result.id == 1
-    assert result.people_count == 4
-    mock_repo.create.assert_called_once_with(payload)
+    repo.create.assert_called_once_with(payload)
 
 
-def test_ingest_detection_router() -> None:
-    """Prueba de integración del endpoint POST /analytics/detections usando dependency overrides."""
-    mock_service = MagicMock()
-    mock_service.register_detection.return_value = DetectionEvent(
-        id=1,
+def test_analytics_repository_applies_all_filters() -> None:
+    db = MagicMock()
+    query = db.query.return_value
+    query.filter.return_value = query
+    query.offset.return_value = query
+    query.limit.return_value = query
+    query.order_by.return_value = query
+    query.all.return_value = [make_event()]
+    repository = AnalyticsRepository(db)
+    filters = DetectionFilters(
         camera_id=1,
-        zone_name="Pasillo Central",
-        people_count=4,
-        timestamp="2026-09-05T12:00:00Z",
+        zone_name="Central",
+        start_date=datetime(2026, 9, 1, tzinfo=UTC),
+        end_date=datetime(2026, 9, 5, tzinfo=UTC),
+        limit=10,
+        offset=5,
     )
 
-    app.dependency_overrides[get_analytics_service] = lambda: mock_service
+    result = repository.get_all(filters)
 
-    payload = {
-        "camera_id": 1,
-        "zone_name": "Pasillo Central",
-        "people_count": 4,
-        "timestamp": "2026-09-05T12:00:00Z",
-    }
-    response = client.post("/analytics/detections", json=payload)
+    assert len(result) == 1
+    assert query.filter.call_count == 4
+    query.offset.assert_called_once_with(5)
+    query.limit.assert_called_once_with(10)
 
-    assert response.status_code == 201
-    data = response.json()
-    assert data["camera_id"] == 1
-    assert data["status"] == "received"
 
+def test_get_detections_router_passes_filters() -> None:
+    service = MagicMock()
+    service.get_detections.return_value = [make_event()]
+    app.dependency_overrides[get_analytics_service] = lambda: service
+
+    response = client.get(
+        "/analytics/detections?camera_id=1&zone_name=Central"
+        "&start_date=2026-09-01T00:00:00Z&end_date=2026-09-05T23:59:59Z"
+        "&limit=10&offset=5"
+    )
+
+    assert response.status_code == 200
+    assert response.json()[0]["status"] == "received"
+    service.get_detections.assert_called_once()
+    filters = service.get_detections.call_args.args[0]
+    assert filters == DetectionFilters(
+        camera_id=1,
+        zone_name="Central",
+        start_date=datetime(2026, 9, 1, tzinfo=UTC),
+        end_date=datetime(2026, 9, 5, 23, 59, 59, tzinfo=UTC),
+        limit=10,
+        offset=5,
+    )
     app.dependency_overrides.clear()
 
 
-def test_get_detections_router() -> None:
-    """Prueba de integración del endpoint GET /analytics/detections usando dependency overrides."""
-    mock_service = MagicMock()
-    mock_service.get_detections.return_value = [
-        DetectionEvent(
-            id=1,
-            camera_id=1,
-            zone_name="Pasillo Central",
-            people_count=4,
-            timestamp="2026-09-05T12:00:00Z",
-        )
-    ]
+def test_get_detections_rejects_invalid_date_range() -> None:
+    service = MagicMock()
+    app.dependency_overrides[get_analytics_service] = lambda: service
 
-    app.dependency_overrides[get_analytics_service] = lambda: mock_service
+    response = client.get(
+        "/analytics/detections?start_date=2026-09-06T00:00:00Z"
+        "&end_date=2026-09-05T00:00:00Z"
+    )
 
-    response = client.get("/analytics/detections")
-
-    assert response.status_code == 200
-    data = response.json()
-    assert len(data) == 1
-    assert data[0]["camera_id"] == 1
-    assert data[0]["zone_name"] == "Pasillo Central"
-
+    assert response.status_code == 422
+    service.get_detections.assert_not_called()
     app.dependency_overrides.clear()

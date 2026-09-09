@@ -8,6 +8,18 @@ El orden de registro es ascendente. En la parte superior estará el registro má
 
 ---
 
+## [2026-09-08] Módulo Analytics Filtering
+
+**Quién:** @FrankArmed | Frank Asael
+
+**Herramienta:** Gemini (AI Collaborator)
+
+**Qué se pidió:** Resolución de inestabilidad en la paginación y validación estricta de zona horaria.
+
+**Qué se generó / propuso:** Uso de `AwareDatetime` en Pydantic y un criterio de desempate en la ordenación (`DetectionEvent.id.desc()`) para SQLAlchemy.
+
+**Qué se aceptó y qué se rechazó, y por qué:** Se implementó todo para asegurar que bases de datos de series temporales no tengan solapamientos silenciosos de offset.
+
 ## [2026-09-08] Módulo Analytics Ingestion
 
 **Quién:** @FrankArmed | Frank Asael
@@ -90,6 +102,28 @@ También crear `get_runtime_config` para traer el .yml de configuración (este a
 **Qué se aceptó y qué se rechazó, y por qué:** Acepté todo en general, menos dejar el main solo para ejecutar todo; ahí decidí dejar toda la configuración de printeo final, esto porque esa lógica de printeo es lo que se convertirá en el contrato con la API para comunicación y eso lo quería tener en el main.py.
 
 **Validación:** Después de que generó el plan, le mencioné la restricción de antes y también le dije que lo probara activando el .venv y ejecutando mypy, ruff, pytest. Al terminar, me dio el resumen y lo probé yo + python -m vision.src.main para ver que la lógica funcionara igual.
+
+## [2026-09-07] Auditoría dual del módulo de Analítica en el PR #18
+
+**Quién:** @aleixscarbo | Aleixs Carbonell
+
+**Herramienta:** GitHub Copilot (VS Code) + revisión humana como Tech Lead
+
+**Qué se pidió:** Realizar un Code Review profundo del PR #18, correspondiente al módulo de Analítica (`DetectionEvent`). Se aplicó un modelo de auditoría dual: revisión automatizada con IA (Copilot de VS Code) para el análisis estático y verificación humana contra el *Definition of Done* (DoD). El prompt utilizado fue: "Actúa como un Staff Software Engineer extremadamente estricto pero constructivo. Realiza un Code Review profundo de los 6 archivos adjuntos... Evalúa Pydantic, paginación en SQLAlchemy 2.0 y pruebas con MagicMock."
+
+**Qué produjo la IA vs Qué detectó el Humano?:**
+
+- **Hallazgos de la IA:** Detectó vulnerabilidades arquitectónicas críticas en la capa de datos. Identificó el uso de datetimes "naive" en Pydantic que corromperían las series de tiempo, y advirtió sobre una paginación inestable en SQLAlchemy al ordenar únicamente por timestamp sin un ID de desempate.
+- **Hallazgo del Humano:** Actuando como Tech Lead, detecté una violación administrativa directa al *Definition of Done*. El autor modificó el `BACKLOG.md` con las nuevas User Stories, pero omitió por completo registrar el trabajo de generación de código en el `AI_LOG.md`.
+
+**Qué se aceptó y qué se rechazó, y por qué:** Se aceptó el diagnóstico técnico de la IA sobre la necesidad de imponer UTC estricto y estabilizar la paginación con un criterio de desempate, porque ambos puntos afectan la integridad de los datos y la consistencia de las consultas a gran escala. También se aceptó la conclusión de que una cobertura superior al 90% no garantiza la robustez arquitectónica del módulo. Se rechazó considerar suficiente el análisis automatizado por sí solo, porque la IA no detectó la omisión administrativa del `AI_LOG.md` frente al DoD. El resultado del Peer Review fue un veredicto de "Request Changes".
+
+**Conclusiones Clave sobre la IA en Code Reviews (Criterio Técnico):**
+
+- La IA es excepcional detectando antipatrones de diseño y fugas de abstracción en el código estático, pero carece del contexto administrativo para hacer cumplir las reglas del equipo (como el DoD).
+- Se priorizó la integridad de las series de tiempo mediante UTC estricto y la consistencia de la paginación a gran escala, demostrando que un PR con +90% de cobertura no es inmune a fallas de arquitectura de datos.
+
+**Validación:** Se contrastó el análisis estático de Copilot con una revisión humana del proceso de entrega y del *Definition of Done*. La auditoría confirmó que el módulo requería cambios técnicos por el manejo de fechas y la paginación, y que además existía una deuda documental no identificada por la IA. Por estos motivos, el PR #18 quedó con veredicto de "Request Changes" hasta corregir ambos tipos de hallazgos.
 
 ## [2026-09-05] Resolución de Peer Review: defensa de la arquitectura de Stores
 
