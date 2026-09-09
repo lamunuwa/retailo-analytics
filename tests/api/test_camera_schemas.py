@@ -8,7 +8,7 @@ from app.src.schemas.cameras import CameraCreate, CameraUpdate
 
 def test_camera_create_valido() -> None:
     """
-    Se envían los datos mínimos requeridos y se verifica que 
+    Se envían los datos mínimos requeridos y se verifica que
     pydantic asigne correctamente los valores por defecto.
     """
     datos: dict[str, Any] = {
@@ -21,7 +21,7 @@ def test_camera_create_valido() -> None:
     # Valida que los datos insertados coincidan
     assert resultado.name == "Cámara Pasillo 1"
     assert resultado.source_type == "demo_video"
-    
+
     # Valida que pydantic asigne correctamente los valores por defecto
     assert resultado.is_active is True
     assert resultado.description is None
@@ -37,7 +37,7 @@ def test_camera_create_rechaza_datos_faltantes() -> None:
         # Se omite el campo source_type
     }
 
-    # pytest intercepta el error 
+    # pytest intercepta el error
     with pytest.raises(ValidationError):
         CameraCreate(**datos)
 
@@ -67,6 +67,6 @@ def test_camera_update_parcial() -> None:
 
     # verifica que capturó el cambio
     assert resultado.is_active is False
-    
+
     # los demás campos deben quedarse en None para que la base de datos sepa que no debe alterarlos
     assert resultado.name is None
