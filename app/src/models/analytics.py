@@ -1,18 +1,19 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy import DateTime, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.src.core.db import Base
 
 
 class DetectionEvent(Base):
-    """Modelo SQLAlchemy para eventos de detección."""
+    """Modelo SQLAlchemy para almacenar los eventos de detección analítica."""
 
     __tablename__ = "detection_events"
 
-    id = Column(Integer, primary_key=True, index=True)
-    camera_id = Column(Integer, nullable=False, index=True)
-    zone_name = Column(String, nullable=False)
-    people_count = Column(Integer, nullable=False)
-    timestamp = Column(DateTime, nullable=False)
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True, autoincrement=True)
+    camera_id: Mapped[int] = mapped_column(Integer, index=True)
+    zone_name: Mapped[str] = mapped_column(String)
+    people_count: Mapped[int] = mapped_column(Integer)
+    timestamp: Mapped[datetime] = mapped_column(DateTime)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
