@@ -6,9 +6,8 @@ import numpy as np
 
 Point = tuple[int, int]
 
-
-""" Configuracion temporal hasta que un POST de la API entregue estas zonas. 
-Cada clave identifica una zona y cada tupla contiene puntos (x, y). """
+# Configuracion temporal hasta recibir las zonas desde la API.
+# Cada clave identifica una zona y cada tupla contiene puntos (x, y).
 DEFAULT_ZONE_COORDINATES: dict[str, tuple[Point, ...]] = {
     "entrada": ((4, 6), (1909, 6), (1909, 1080), (6, 1080)),
 }
@@ -16,16 +15,17 @@ DEFAULT_ZONE_COORDINATES: dict[str, tuple[Point, ...]] = {
 
 @dataclass(frozen=True)
 class RoiZone:
-    """Representa una zona definida"""
+    """Representa una zona definida mediante puntos"""
 
     name: str
     points: tuple[Point, ...]
 
     @property
     def contour(self) -> np.ndarray:
-        """Convierte los puntos al formato de OpenCV"""
+        """Convierte los puntos al formato requerido por OpenCV"""
 
-        return np.array(self.points, dtype=np.int32)
+        contour = np.array(self.points, dtype=np.int32)
+        return contour
 
     def contains(self, point: tuple[float, float]) -> bool:
         """Indica si un punto pertenece a la zona, incluidos sus bordes"""
@@ -34,13 +34,13 @@ class RoiZone:
         return is_inside
 
 
-# funciones de apoyo ---------------------------------------
+# Funciones de apoyo ---------------------------------------
 
 def validate_zone_points(
     zone_name: str,
     zone_points: Sequence[Point],
 ) -> None:
-    """Valida que una zona tenga los puntos minimos para formar una zona (poligono)"""
+    """Valida que una zona tenga puntos suficientes para formar un poligono"""
 
     if len(zone_points) < 3:
         raise ValueError(
@@ -51,7 +51,7 @@ def validate_zone_points(
 def build_zones(
     zone_coordinates: Mapping[str, Sequence[Point]],
 ) -> tuple[RoiZone, ...]:
-    """Convierte coordenadas configuradas en zonas ROI"""
+    """Convierte las coordenadas configuradas en zonas ROI"""
 
     if not zone_coordinates:
         raise ValueError("Se requiere al menos una zona ROI")
@@ -71,7 +71,7 @@ def build_zones(
 
 
 def get_configured_zones() -> tuple[RoiZone, ...]:
-    """Aqui se comunicara la API para los puntos de las zonas"""
+    """Obtiene las zonas configuradas para la deteccion"""
 
     zones = build_zones(DEFAULT_ZONE_COORDINATES)
     return zones

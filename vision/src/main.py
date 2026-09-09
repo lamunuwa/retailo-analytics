@@ -1,32 +1,29 @@
-import torch
-
 from vision.src.modules.session import VideoSession, run_detection
 from vision.src.modules.zones import get_configured_zones
-
-
-def get_device() -> str:
-    """Selecciona CUDA si existe, de lo contrario, usa CPU"""
-
-    if torch.cuda.is_available():
-        print(f"Dispositivo seleccionado: cuda ({torch.cuda.get_device_name(0)})")
-        return "cuda"
-
-    print("Dispositivo seleccionado: cpu")
-    return "cpu"
+from vision.src.runtime import get_runtime_config
 
 
 def main() -> VideoSession:
     """Inicia la detección y cuenta por zona."""
 
     zones = get_configured_zones()
+    runtime_config = get_runtime_config()
+
     session = run_detection(
-        device=get_device(),
+        device=runtime_config.device,
         zones=zones,
+        video_source=runtime_config.video_source,
+        model_path=runtime_config.model_path,
+        tracker_path=runtime_config.tracker_path,
     )
 
-    print(f"Personas detectadas: {session.detected_people}")
-    for zone_name, count in session.detections_by_zone.items():
+    print(f"Detecciones YOLO: {session.detected_people}")
+    print(f"Personas rastreadas: {session.tracked_people}")
+    print(f"Detecciones sin track: {session.untracked_detections}")
+
+    for zone_name, count in session.visits_by_zone.items():
         print(f"{zone_name}: {count}")
+
     return session
 
 
