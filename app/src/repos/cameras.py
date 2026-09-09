@@ -10,7 +10,11 @@ class CameraRepositoryProtocol(Protocol):
     """Define el contrato de operaciones de persistencia para la entidad Camera."""
 
     def create(
-        self, store_id: int, name: str, source_type: str, description: str | None = None
+        self,
+        store_id: int,
+        name: str,
+        source_type: str,
+        description: str | None = None,
     ) -> CameraModel:
         """Registra una nueva cámara asociada a una tienda."""
         ...
@@ -34,7 +38,9 @@ class CameraRepositoryProtocol(Protocol):
         """Actualiza de forma parcial los atributos de una cámara existente."""
         ...
 
-    def soft_delete(self, camera_id: int) -> CameraModel | None: ...
+    def soft_delete(self, camera_id: int) -> CameraModel | None:
+        """Realiza un borrado lógico marcando is_active como False en la cámara."""
+        ...
 
 
 class CameraRepository:
@@ -45,7 +51,11 @@ class CameraRepository:
         self.session = session
 
     def create(
-        self, store_id: int, name: str, source_type: str, description: str | None = None
+        self,
+        store_id: int,
+        name: str,
+        source_type: str,
+        description: str | None = None,
     ) -> CameraModel:
         """Crea, persiste y retorna una nueva cámara en la base de datos."""
         camera = CameraModel(
@@ -62,7 +72,8 @@ class CameraRepository:
     def get_all_by_store(self, store_id: int) -> list[CameraModel]:
         """Consulta y retorna un listado de cámaras activas filtradas por su tienda."""
         stmt = select(CameraModel).where(
-            CameraModel.store_id == store_id, CameraModel.is_active.is_(True)
+            CameraModel.store_id == store_id,
+            CameraModel.is_active.is_(True),
         )
         return list(self.session.scalars(stmt).all())
 
@@ -83,7 +94,7 @@ class CameraRepository:
         provistos de una cámara y persiste los cambios.
         """
         camera = self.session.get(CameraModel, camera_id)
-        if camera is None:
+        if camera is None or not camera.is_active:
             return None
 
         if name is not None:

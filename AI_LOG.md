@@ -8,6 +8,14 @@ El orden de registro es ascendente. En la parte superior estará el registro má
 
 ---
 
+## [2026-09-08] Módulo Cameras CRUD y estabilización de pruebas
+**Quién:** @FrankArmed
+**Herramienta:** Gemini (AI Collaborator)
+**Qué se pidió:** Refactorizar el Soft Delete en el repositorio y añadir aserciones estrictas a los Mocks del router basándose en el Peer Review.
+**Qué se generó / propuso:** Validación de `is_active` en el método de actualización del repositorio y aserciones `assert_called_once_with` en todas las pruebas HTTP para garantizar que los parámetros enviados coincidan exactamente.
+**Qué se aceptó y qué se rechazó, y por qué:** Se aceptaron todas las modificaciones para blindar la API frente a modificaciones de recursos inactivos (404 Not Found) y asegurar que las pruebas de los endpoints pasen únicamente si la capa HTTP transfiere los datos correctos a la capa de persistencia.
+**Validación:** Pytest y Ruff aprobaron satisfactoriamente todas las reglas de cobertura y validación de tipos tras la implementación.
+
 ## [2026-09-05] Resolución de Peer Review: defensa de la arquitectura de Stores
 
 **Quién:** @aleixscarbo | Aleixs Carbonell
