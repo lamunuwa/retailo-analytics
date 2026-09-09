@@ -26,7 +26,7 @@ class DetectionEventResponse(DetectionEventBase):
         from_attributes = True
 
 
-class AnalyticsFilterParams(BaseModel):
+class DetectionFilters(BaseModel):
     """Parámetros de consulta para filtrado y paginación de eventos."""
 
     camera_id: int | None = Field(default=None, description="Filtrar por cámara")
