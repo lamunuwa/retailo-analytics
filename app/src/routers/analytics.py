@@ -32,25 +32,25 @@ def ingest_detection(
     """Recibe las métricas de conteo de personas y las persiste."""
     db_event = service.register_detection(event)
     return DetectionEventResponse(
-        camera_id=int(db_event.camera_id),
-        zone_name=str(db_event.zone_name),
-        people_count=int(db_event.people_count),
+        camera_id=db_event.camera_id,
+        zone_name=db_event.zone_name,
+        people_count=db_event.people_count,
         timestamp=db_event.timestamp,
         status="received",
     )
 
 
 @router.get("/detections", response_model=list[DetectionEventResponse])
-def get_detections( #mambo mambo
+def get_detections(
     service: Annotated[AnalyticsService, Depends(get_analytics_service)],
 ) -> Sequence[DetectionEventResponse]:
     """Lista todos los eventos de detección almacenados."""
     db_events = service.get_detections()
     return [
-	DetectionEventResponse(
-            camera_id=int(e.camera_id),
-            zone_name=str(e.zone_name),
-            people_count=int(e.people_count),
+        DetectionEventResponse(
+            camera_id=e.camera_id,
+            zone_name=e.zone_name,
+            people_count=e.people_count,
             timestamp=e.timestamp,
             status="received",
         )
