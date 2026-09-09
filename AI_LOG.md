@@ -8,6 +8,40 @@ El orden de registro es ascendente. En la parte superior estará el registro má
 
 ---
 
+## [2026-09-08] Módulo Analytics Ingestion
+
+**Quién:** @FrankArmed | Frank Asael
+
+**Herramienta:** Gemini (AI Collaborator)
+
+**Qué se pidió:** Ayudar a corregir e implementar esquemas y configuración base del repositorio SQLAlchemy.
+
+**Qué se generó / propuso:** Estructura de validación Pydantic para ingesta y cascarones para las pruebas mock.
+
+**Qué se aceptó y qué se rechazó, y por qué:** Se aceptó la estructura propuesta por mantener aislamiento. Se refactorizó la coerción de tipos en el router para evitar directivas `type: ignore` y cumplir el tipado estricto.
+
+## [2026-09-08] Tercera auditoría de código: optimización YOLO y ByteTracker en el PR #21
+
+**Quién:** @aleixscarbo | Aleixs Carbonell
+
+**Herramienta:** GitHub Copilot (VS Code) + revisión humana como Tech Lead
+
+**Qué se pidió:** Realizar un Code Review profundo del PR #21, correspondiente a la optimización de YOLO y ByteTracker. Se evaluó el rendimiento en procesos de larga duración y la calidad de las pruebas simuladas. El prompt utilizado fue: "Actúa como un Staff Software Engineer especialista en Computer Vision y Backend. Realiza un Code Review profundo de los 5 archivos adjuntos... Evalúa fugas de memoria, robustez de tipos y la calidad real de los mocks."
+
+**Qué produjo la IA vs Qué detectó el Humano?:**
+
+- **Hallazgos de la IA:** Identificó una fuga de memoria (*Memory Leak*) crítica causada por el uso de `set()` en ciclos infinitos para acumular IDs de rastreo. Además, detectó "pruebas cosméticas" que validaban la deduplicación reingresando exactamente el mismo frame simulado en lugar de usar secuencias temporales lógicas.
+- **Hallazgo del Humano:** A diferencia de las revisiones anteriores, validé que la autora sí cumplió estrictamente con el *Definition of Done* al actualizar `AI_LOG.md` y `BACKLOG.md`. Utilicé esto para iniciar la revisión con refuerzo positivo antes de señalar la vulnerabilidad.
+
+**Qué se aceptó y qué se rechazó, y por qué:** Se aceptó el diagnóstico de la IA sobre la retención potencialmente ilimitada de IDs, porque relaciona una estructura de datos aparentemente inocua con el ciclo de vida real de un proceso de video 24/7 y puede provocar una caída por agotamiento de memoria (*Out-Of-Memory*, OOM). También se aceptó la observación sobre las pruebas cosméticas, ya que repetir exactamente el mismo frame no demuestra el comportamiento del tracker a través del tiempo. Se rechazó cualquier conclusión que tratara la cobertura o los linters como evidencia suficiente de seguridad operacional. El veredicto fue "Request Changes" exclusivamente por la arquitectura de memoria.
+
+**Conclusiones Clave sobre la IA en Code Reviews:**
+
+- La IA brilló al correlacionar estructuras de datos simples (`set`) con el ciclo de vida del sistema (stream de video 24/7), previendo una caída por *Out-Of-Memory* (OOM) que los linters y el coverage jamás detectarían.
+- La revisión humana confirmó el cumplimiento documental del *Definition of Done* y permitió reconocer primero ese resultado antes de señalar la vulnerabilidad técnica. Se emitió un "Request Changes" exclusivamente por la arquitectura de memoria.
+
+**Validación:** Se contrastó el análisis estático de Copilot con la revisión humana del *Definition of Done*, `AI_LOG.md` y `BACKLOG.md`. La auditoría confirmó que la documentación requerida estaba actualizada, pero que el diseño de los acumuladores no era adecuado para procesos indefinidos y que las pruebas no modelaban secuencias temporales representativas. El PR #21 quedó pendiente de cambios hasta establecer una política de retención de IDs y reforzar las pruebas del ciclo de vida del tracker.
+
 ## [2026-09-08] Correcciones de Peer Review
 
 **Quién:** @LaMunuwa | Anna Valentina
@@ -353,25 +387,3 @@ Al final, cuando intentó ejecutar pytest, se dio cuenta de que los directorios 
 **Validación:** Revisé archivo por archivo; en los `Dockerfiles` y en el `docker-compose.yml` me parece que hizo un excelente trabajo, es legible y cumple con lo que mencionaba; lo mismo pasa con los `requirements.txt` aunque aquí le faltaron algunas librerías como NumPy, que yo uso para trabajar en visión artificial. Intentaré trabajar solo con las que puso, esperando que sea un flujo más eficiente.
 
 El único lugar donde podría argumentar que falló fue en `.dockerignore` porque no puso ningún tipo de orden, solo escribió cosas; aproveché eso para borrarlo y copiar y pegar lo que tenía en SensorHub.
-
-## [2026-09-08] Tercera auditoría de código: optimización YOLO y ByteTracker en el PR #21
-
-**Quién:** @aleixscarbo | Aleixs Carbonell
-
-**Herramienta:** GitHub Copilot (VS Code) + revisión humana como Tech Lead
-
-**Qué se pidió:** Realizar un Code Review profundo del PR #21, correspondiente a la optimización de YOLO y ByteTracker. Se evaluó el rendimiento en procesos de larga duración y la calidad de las pruebas simuladas. El prompt utilizado fue: "Actúa como un Staff Software Engineer especialista en Computer Vision y Backend. Realiza un Code Review profundo de los 5 archivos adjuntos... Evalúa fugas de memoria, robustez de tipos y la calidad real de los mocks."
-
-**Qué produjo la IA vs Qué detectó el Humano?:**
-
-- **Hallazgos de la IA:** Identificó una fuga de memoria (*Memory Leak*) crítica causada por el uso de `set()` en ciclos infinitos para acumular IDs de rastreo. Además, detectó "pruebas cosméticas" que validaban la deduplicación reingresando exactamente el mismo frame simulado en lugar de usar secuencias temporales lógicas.
-- **Hallazgo del Humano:** A diferencia de las revisiones anteriores, validé que la autora sí cumplió estrictamente con el *Definition of Done* al actualizar `AI_LOG.md` y `BACKLOG.md`. Utilicé esto para iniciar la revisión con refuerzo positivo antes de señalar la vulnerabilidad.
-
-**Qué se aceptó y qué se rechazó, y por qué:** Se aceptó el diagnóstico de la IA sobre la retención potencialmente ilimitada de IDs, porque relaciona una estructura de datos aparentemente inocua con el ciclo de vida real de un proceso de video 24/7 y puede provocar una caída por agotamiento de memoria (*Out-Of-Memory*, OOM). También se aceptó la observación sobre las pruebas cosméticas, ya que repetir exactamente el mismo frame no demuestra el comportamiento del tracker a través del tiempo. Se rechazó cualquier conclusión que tratara la cobertura o los linters como evidencia suficiente de seguridad operacional. El veredicto fue "Request Changes" exclusivamente por la arquitectura de memoria.
-
-**Conclusiones Clave sobre la IA en Code Reviews:**
-
-- La IA brilló al correlacionar estructuras de datos simples (`set`) con el ciclo de vida del sistema (stream de video 24/7), previendo una caída por *Out-Of-Memory* (OOM) que los linters y el coverage jamás detectarían.
-- La revisión humana confirmó el cumplimiento documental del *Definition of Done* y permitió reconocer primero ese resultado antes de señalar la vulnerabilidad técnica. Se emitió un "Request Changes" exclusivamente por la arquitectura de memoria.
-
-**Validación:** Se contrastó el análisis estático de Copilot con la revisión humana del *Definition of Done*, `AI_LOG.md` y `BACKLOG.md`. La auditoría confirmó que la documentación requerida estaba actualizada, pero que el diseño de los acumuladores no era adecuado para procesos indefinidos y que las pruebas no modelaban secuencias temporales representativas. El PR #21 quedó pendiente de cambios hasta establecer una política de retención de IDs y reforzar las pruebas del ciclo de vida del tracker.
