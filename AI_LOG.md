@@ -8,6 +8,13 @@ El orden de registro es ascendente. En la parte superior estará el registro má
 
 ---
 
+## [2026-09-08] Módulo Analytics Ingestion
+**Quién:** @FrankArmed
+**Herramienta:** Gemini (AI Collaborator)
+**Qué se pidió:** Ayudar a corregir e implementar esquemas y configuración base del repositorio SQLAlchemy.
+**Qué se generó / propuso:** Estructura de validación Pydantic para ingesta y cascarones para las pruebas mock.
+**Qué se aceptó y qué se rechazó, y por qué:** Se aceptó la estructura propuesta por mantener aislamiento. Se refactorizó la coerción de tipos en el router para evitar directivas `type: ignore` y cumplir el tipado estricto.
+
 ## [2026-09-05] Resolución de Peer Review: defensa de la arquitectura de Stores
 
 **Quién:** @aleixscarbo | Aleixs Carbonell

@@ -32,10 +32,10 @@ def ingest_detection(
     """Recibe las métricas de conteo de personas y las persiste."""
     db_event = service.register_detection(event)
     return DetectionEventResponse(
-        camera_id=db_event.camera_id,  # type: ignore[arg-type]
-        zone_name=db_event.zone_name,  # type: ignore[arg-type]
-        people_count=db_event.people_count,  # type: ignore[arg-type]
-        timestamp=db_event.timestamp,  # type: ignore[arg-type]
+        camera_id=int(db_event.camera_id),
+        zone_name=str(db_event.zone_name),
+        people_count=int(db_event.people_count),
+        timestamp=db_event.timestamp,
         status="received",
     )
 
@@ -47,11 +47,11 @@ def get_detections( #mambo mambo
     """Lista todos los eventos de detección almacenados."""
     db_events = service.get_detections()
     return [
-        DetectionEventResponse(
-            camera_id=e.camera_id,  # type: ignore[arg-type]
-            zone_name=e.zone_name,  # type: ignore[arg-type]
-            people_count=e.people_count,  # type: ignore[arg-type]
-            timestamp=e.timestamp,  # type: ignore[arg-type]
+	DetectionEventResponse(
+            camera_id=int(e.camera_id),
+            zone_name=str(e.zone_name),
+            people_count=int(e.people_count),
+            timestamp=e.timestamp,
             status="received",
         )
         for e in db_events
