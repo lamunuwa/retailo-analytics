@@ -9,12 +9,135 @@ El orden de registro es ascendente. En la parte superior estará el registro má
 ---
 
 ## [2026-09-08] Módulo Cameras CRUD y estabilización de pruebas
-**Quién:** @FrankArmed
+
+**Quién:** @FrankArmed | Frank Asael
+
 **Herramienta:** Gemini (AI Collaborator)
+
 **Qué se pidió:** Refactorizar el Soft Delete en el repositorio y añadir aserciones estrictas a los Mocks del router basándose en el Peer Review.
+
 **Qué se generó / propuso:** Validación de `is_active` en el método de actualización del repositorio y aserciones `assert_called_once_with` en todas las pruebas HTTP para garantizar que los parámetros enviados coincidan exactamente.
+
 **Qué se aceptó y qué se rechazó, y por qué:** Se aceptaron todas las modificaciones para blindar la API frente a modificaciones de recursos inactivos (404 Not Found) y asegurar que las pruebas de los endpoints pasen únicamente si la capa HTTP transfiere los datos correctos a la capa de persistencia.
+
 **Validación:** Pytest y Ruff aprobaron satisfactoriamente todas las reglas de cobertura y validación de tipos tras la implementación.
+
+## [2026-09-08] Módulo Analytics Filtering
+
+**Quién:** @FrankArmed | Frank Asael
+
+**Herramienta:** Gemini (AI Collaborator)
+
+**Qué se pidió:** Resolución de inestabilidad en la paginación y validación estricta de zona horaria.
+
+**Qué se generó / propuso:** Uso de `AwareDatetime` en Pydantic y un criterio de desempate en la ordenación (`DetectionEvent.id.desc()`) para SQLAlchemy.
+
+**Qué se aceptó y qué se rechazó, y por qué:** Se implementó todo para asegurar que bases de datos de series temporales no tengan solapamientos silenciosos de offset.
+
+## [2026-09-08] Módulo Analytics Ingestion
+
+**Quién:** @FrankArmed | Frank Asael
+
+**Herramienta:** Gemini (AI Collaborator)
+
+**Qué se pidió:** Ayudar a corregir e implementar esquemas y configuración base del repositorio SQLAlchemy.
+
+**Qué se generó / propuso:** Estructura de validación Pydantic para ingesta y cascarones para las pruebas mock.
+
+**Qué se aceptó y qué se rechazó, y por qué:** Se aceptó la estructura propuesta por mantener aislamiento. Se refactorizó la coerción de tipos en el router para evitar directivas `type: ignore` y cumplir el tipado estricto.
+
+## [2026-09-08] Tercera auditoría de código: optimización YOLO y ByteTracker en el PR #21
+
+**Quién:** @aleixscarbo | Aleixs Carbonell
+
+**Herramienta:** GitHub Copilot (VS Code) + revisión humana como Tech Lead
+
+**Qué se pidió:** Realizar un Code Review profundo del PR #21, correspondiente a la optimización de YOLO y ByteTracker. Se evaluó el rendimiento en procesos de larga duración y la calidad de las pruebas simuladas. El prompt utilizado fue: "Actúa como un Staff Software Engineer especialista en Computer Vision y Backend. Realiza un Code Review profundo de los 5 archivos adjuntos... Evalúa fugas de memoria, robustez de tipos y la calidad real de los mocks."
+
+**Qué produjo la IA vs Qué detectó el Humano?:**
+
+- **Hallazgos de la IA:** Identificó una fuga de memoria (*Memory Leak*) crítica causada por el uso de `set()` en ciclos infinitos para acumular IDs de rastreo. Además, detectó "pruebas cosméticas" que validaban la deduplicación reingresando exactamente el mismo frame simulado en lugar de usar secuencias temporales lógicas.
+- **Hallazgo del Humano:** A diferencia de las revisiones anteriores, validé que la autora sí cumplió estrictamente con el *Definition of Done* al actualizar `AI_LOG.md` y `BACKLOG.md`. Utilicé esto para iniciar la revisión con refuerzo positivo antes de señalar la vulnerabilidad.
+
+**Qué se aceptó y qué se rechazó, y por qué:** Se aceptó el diagnóstico de la IA sobre la retención potencialmente ilimitada de IDs, porque relaciona una estructura de datos aparentemente inocua con el ciclo de vida real de un proceso de video 24/7 y puede provocar una caída por agotamiento de memoria (*Out-Of-Memory*, OOM). También se aceptó la observación sobre las pruebas cosméticas, ya que repetir exactamente el mismo frame no demuestra el comportamiento del tracker a través del tiempo. Se rechazó cualquier conclusión que tratara la cobertura o los linters como evidencia suficiente de seguridad operacional. El veredicto fue "Request Changes" exclusivamente por la arquitectura de memoria.
+
+**Conclusiones Clave sobre la IA en Code Reviews:**
+
+- La IA brilló al correlacionar estructuras de datos simples (`set`) con el ciclo de vida del sistema (stream de video 24/7), previendo una caída por *Out-Of-Memory* (OOM) que los linters y el coverage jamás detectarían.
+- La revisión humana confirmó el cumplimiento documental del *Definition of Done* y permitió reconocer primero ese resultado antes de señalar la vulnerabilidad técnica. Se emitió un "Request Changes" exclusivamente por la arquitectura de memoria.
+
+**Validación:** Se contrastó el análisis estático de Copilot con la revisión humana del *Definition of Done*, `AI_LOG.md` y `BACKLOG.md`. La auditoría confirmó que la documentación requerida estaba actualizada, pero que el diseño de los acumuladores no era adecuado para procesos indefinidos y que las pruebas no modelaban secuencias temporales representativas. El PR #21 quedó pendiente de cambios hasta establecer una política de retención de IDs y reforzar las pruebas del ciclo de vida del tracker.
+
+## [2026-09-08] Correcciones de Peer Review
+
+**Quién:** @LaMunuwa | Anna Valentina
+
+**Herramienta:** ChatGPT
+
+**Qué se pidió:** @aleixscarbo me hizo una review de mi PR #21, me mencionó algunas cosas que yo no sabía cómo hacerlas; realmente investigando, eran optimizaciones aún más allá de lo que yo había hecho, entonces entra como parte del feature. Mencionó lo siguiente:
+
+- `vision/src/modules/session.py` y `counting.py` (Fuga de Memoria)
+  - **Qué observaste:** Los acumuladores `track_ids_by_zone` y `tracked_people_ids` utilizan la estructura `set()` para almacenar todos los IDs únicos vistos. En un despliegue real donde la cámara procese video 24/7, estos conjuntos crecerán infinitamente cada vez que ByteTracker asigne un nuevo ID, provocando un colapso del servidor por falta de memoria RAM (Out-Of-Memory).
+  - **Qué propones:** Es imperativo implementar una política de expiración. Puedes limitar la sesión a ventanas temporales (ej. reiniciar contadores cada hora y guardar el total en BD) o usar un mecanismo de TTL (Time-To-Live) para purgar de la memoria los IDs que no han sido vistos en los últimos X minutos.
+
+- `tests/vision/test_vision.py` (Pruebas Cosméticas de Tracking)
+  - **Qué observaste:** Aunque la cobertura es altísima (+95%), la prueba de `ZoneCounter` (`L178`) registra exactamente el mismo objeto dos veces para validar la deduplicación, y el mock del detector en la sesión devuelve un frame estático. Esto no prueba el comportamiento real del rastreador a través del tiempo.
+  - **Qué propones:** Las pruebas de tracking necesitan movimiento. Simula al menos 3 frames consecutivos donde un ID entra a la zona, permanece, y sale de la zona, para garantizar que la lógica de retención y conteo funciona bajo carga dinámica, no solo con fotos estáticas.
+
+Directamente envié esto a ChatGPT para que me ayudara a solucionarlo; creo que ya era bastante información.
+
+**Qué se generó / propuso:** Únicamente corrigió lo solicitado.
+
+**Qué se aceptó y qué se rechazó, y por qué:** Tuvo una breve alucinación, olvidó que todo esto se está llevando a cabo con videos de supermercados reales antes que con la cámara web de mi laptop y borró eso de la lógica, el buscar el path del video; entonces eliminé eso y solo dejé lo que arreglaba lo mencionado por Aleixs.
+
+**Validación:** Probo activando el .venv y ejecutando mypy, ruff, pytest. Al terminar, me dio el resumen y lo probé yo + python -m vision.src.main para ver que la lógica funcionara igual.
+
+## [2026-09-07] Division de main.py y runtime.py
+
+**Quién:** @LaMunuwa | Anna Valentina
+
+**Herramienta:** ChatGPT
+
+**Qué se pidió:** Generé una optimización usando ByteTracker; esto hizo que contaminara de nuevo main.py. Por cada feature o refactor, siempre terminaba ensuciando ese archivo. Entonces busqué con Gemini una forma de separar código de capas, igual que en la API. Me explicó que se podía generar un runtime.py y main.py, para que se pueda ejecutar el código de la capa de servicios en un entorno de desarrollo local. Esto permitirá que los desarrolladores puedan trabajar en el código de la capa de Servicios sin tener que ejecutar el código de la capa de Datos en un entorno de desarrollo local. Use este prompt, fue en ChatGPT, aunque la solucion fue planteada por Gemini web:
+
+> Revisa toda la carpeta de src dentro de vision/. Quiero que veas todos los modulos y main.py, apartir de eso crea un archivo en la raiz de src llamado runtime.py para dividir capas, en ese archivo meteras todos los def que veas sean parte del entorno de desarrollo mas que modulos, por ejemplo inicializaciones.
+>
+> Una vez los tengas ejecuta el entorno virtual y pytest para revisar que siga siendo compatible todo el entorno con el nuevo archivo.
+
+**Qué se generó / propuso:** Planifico mover las siguientes def:
+
+- `get_video_source`
+- `get_model_path`
+- `get_tracker_path`
+- `get_device`
+
+También crear `get_runtime_config` para traer el .yml de configuración (este archivo lo da Ultralytics cuando usas ByteTrack simple), y traer toda la lógica de printeo final para dejar en el main solo el ejecutar los módulos y runtime.
+
+**Qué se aceptó y qué se rechazó, y por qué:** Acepté todo en general, menos dejar el main solo para ejecutar todo; ahí decidí dejar toda la configuración de printeo final, esto porque esa lógica de printeo es lo que se convertirá en el contrato con la API para comunicación y eso lo quería tener en el main.py.
+
+**Validación:** Después de que generó el plan, le mencioné la restricción de antes y también le dije que lo probara activando el .venv y ejecutando mypy, ruff, pytest. Al terminar, me dio el resumen y lo probé yo + python -m vision.src.main para ver que la lógica funcionara igual.
+
+## [2026-09-07] Auditoría dual del módulo de Analítica en el PR #18
+
+**Quién:** @aleixscarbo | Aleixs Carbonell
+
+**Herramienta:** GitHub Copilot (VS Code) + revisión humana como Tech Lead
+
+**Qué se pidió:** Realizar un Code Review profundo del PR #18, correspondiente al módulo de Analítica (`DetectionEvent`). Se aplicó un modelo de auditoría dual: revisión automatizada con IA (Copilot de VS Code) para el análisis estático y verificación humana contra el *Definition of Done* (DoD). El prompt utilizado fue: "Actúa como un Staff Software Engineer extremadamente estricto pero constructivo. Realiza un Code Review profundo de los 6 archivos adjuntos... Evalúa Pydantic, paginación en SQLAlchemy 2.0 y pruebas con MagicMock."
+
+**Qué produjo la IA vs Qué detectó el Humano?:**
+
+- **Hallazgos de la IA:** Detectó vulnerabilidades arquitectónicas críticas en la capa de datos. Identificó el uso de datetimes "naive" en Pydantic que corromperían las series de tiempo, y advirtió sobre una paginación inestable en SQLAlchemy al ordenar únicamente por timestamp sin un ID de desempate.
+- **Hallazgo del Humano:** Actuando como Tech Lead, detecté una violación administrativa directa al *Definition of Done*. El autor modificó el `BACKLOG.md` con las nuevas User Stories, pero omitió por completo registrar el trabajo de generación de código en el `AI_LOG.md`.
+
+**Qué se aceptó y qué se rechazó, y por qué:** Se aceptó el diagnóstico técnico de la IA sobre la necesidad de imponer UTC estricto y estabilizar la paginación con un criterio de desempate, porque ambos puntos afectan la integridad de los datos y la consistencia de las consultas a gran escala. También se aceptó la conclusión de que una cobertura superior al 90% no garantiza la robustez arquitectónica del módulo. Se rechazó considerar suficiente el análisis automatizado por sí solo, porque la IA no detectó la omisión administrativa del `AI_LOG.md` frente al DoD. El resultado del Peer Review fue un veredicto de "Request Changes".
+
+**Conclusiones Clave sobre la IA en Code Reviews (Criterio Técnico):**
+
+- La IA es excepcional detectando antipatrones de diseño y fugas de abstracción en el código estático, pero carece del contexto administrativo para hacer cumplir las reglas del equipo (como el DoD).
+- Se priorizó la integridad de las series de tiempo mediante UTC estricto y la consistencia de la paginación a gran escala, demostrando que un PR con +90% de cobertura no es inmune a fallas de arquitectura de datos.
+
+**Validación:** Se contrastó el análisis estático de Copilot con una revisión humana del proceso de entrega y del *Definition of Done*. La auditoría confirmó que el módulo requería cambios técnicos por el manejo de fechas y la paginación, y que además existía una deuda documental no identificada por la IA. Por estos motivos, el PR #18 quedó con veredicto de "Request Changes" hasta corregir ambos tipos de hallazgos.
 
 ## [2026-09-05] Resolución de Peer Review: defensa de la arquitectura de Stores
 
@@ -312,25 +435,3 @@ Al final, cuando intentó ejecutar pytest, se dio cuenta de que los directorios 
 **Validación:** Revisé archivo por archivo; en los `Dockerfiles` y en el `docker-compose.yml` me parece que hizo un excelente trabajo, es legible y cumple con lo que mencionaba; lo mismo pasa con los `requirements.txt` aunque aquí le faltaron algunas librerías como NumPy, que yo uso para trabajar en visión artificial. Intentaré trabajar solo con las que puso, esperando que sea un flujo más eficiente.
 
 El único lugar donde podría argumentar que falló fue en `.dockerignore` porque no puso ningún tipo de orden, solo escribió cosas; aproveché eso para borrarlo y copiar y pegar lo que tenía en SensorHub.
-
-## [2026-09-07] Segunda auditoría de código: CRUD de Cámaras en el PR #20
-
-**Quién:** @aleixscarbo | Aleixs Carbonell
-
-**Herramienta:** GitHub Copilot (VS Code) + revisión humana como Tech Lead
-
-**Qué se pidió:** Realizar un Code Review profundo del PR #20, correspondiente al CRUD de Cámaras. Se evaluó el cumplimiento de la Inversión de Dependencias mediante Protocolos y la robustez de los Mocks. El prompt utilizado fue: "Actúa como un Staff Software Engineer extremadamente estricto pero constructivo. Realiza un Code Review profundo de los 5 archivos adjuntos... Verifica Protocolos, Integridad Referencial en Soft Delete y Pruebas con Mocks."
-
-**Qué produjo la IA vs Qué detectó el Humano?:**
-
-- **Hallazgos de la IA:** Detectó un hueco de seguridad lógico en el método `update()` que permitía modificar y revivir cámaras eliminadas. También identificó el antipatrón de "Pruebas Cosméticas", donde los Mocks verificaban respuestas pero no interceptaban los argumentos de entrada mediante `assert_called_once_with`.
-- **Hallazgo del Humano:** Detecté una violación al *Definition of Done*, ya que el autor omitió registrar las User Stories en el `BACKLOG.md` y no documentó el proceso generativo en el `AI_LOG.md`.
-
-**Qué se aceptó y qué se rechazó, y por qué:** Se aceptó el diagnóstico técnico de la IA sobre la posibilidad de modificar o revivir cámaras eliminadas, porque debilita la semántica del Soft Delete y puede comprometer la integridad del estado del recurso. También se aceptó la observación sobre las Pruebas Cosméticas, ya que comprobar únicamente el JSON prefabricado no demuestra que el router transmita correctamente los argumentos al repositorio. Se rechazó considerar suficiente la cobertura declarada por sí sola, porque no sustituye la validación del comportamiento ni el cumplimiento documental del *Definition of Done*. El resultado del Peer Review fue un veredicto de "Request Changes".
-
-**Conclusiones Clave sobre la IA en Code Reviews:**
-
-- La IA demuestra una gran agudeza para auditar la solidez matemática de las pruebas unitarias (*Test Doubles*), detectando cuando un test está escrito para "pasar" y no para "validar".
-- El factor humano sigue siendo el guardián de los procesos de desarrollo; la IA evaluó la calidad del código, pero fui yo quien detectó la ausencia de trazabilidad documental. Se emitió un veredicto de "Request Changes" para blindar el Soft Delete y forzar el cumplimiento del DoD.
-
-**Validación:** Se contrastó la revisión estática de Copilot con la verificación humana del *Definition of Done*. La auditoría confirmó que el PR requería cambios para impedir la reactivación o modificación indebida de cámaras eliminadas, fortalecer las pruebas mediante comprobación de argumentos y completar la trazabilidad de User Stories y del uso de IA. El PR #20 quedó pendiente de cambios hasta corregir los hallazgos técnicos y administrativos.
