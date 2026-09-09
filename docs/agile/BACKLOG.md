@@ -294,7 +294,7 @@ Scenario: Rechazar cámara sin campos obligatorios
   Then Pydantic devuelve ValidationError.
 ```
 
-## 3. Gestión de Tiendas (Stores CRUD)
+### 3. Gestión de Tiendas (Stores CRUD)
 
 **Prioridad:** Must Have (MH)
 
@@ -348,7 +348,7 @@ Scenario: Rechazar resultado con datos faltantes o incorrectos
   Then Pydantic devuelve un error de validación ValidationError.
 ```
 
-## 1. Detectar personas en video de demostración
+### 1. Detectar personas en video de demostración
 
 **Prioridad:** Must Have (MH)
 

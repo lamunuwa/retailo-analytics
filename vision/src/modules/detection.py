@@ -7,16 +7,17 @@ from ultralytics import YOLO
 
 @dataclass(frozen=True)
 class PersonDetection:
-    """Representa una persona detectada"""
+    """Representa una persona detectada en un frame"""
 
     x1: float
     y1: float
     x2: float
     y2: float
+    track_id: int | None = None
 
     @property
     def floor_position(self) -> tuple[float, float]:
-        """Obtiene el punto central de la box"""
+        """Obtiene el punto inferior central de la persona"""
 
         center_x = (self.x1 + self.x2) / 2
         floor_y = self.y2
@@ -26,34 +27,50 @@ class PersonDetection:
 
 @dataclass(frozen=True)
 class DetectionFrame:
-    """Imagen y personas detectadas en un frame"""
+    """Representa una imagen y las personas detectadas en un frame"""
 
-    image: np.ndarray
+    image: np.ndarray | None
     people: tuple[PersonDetection, ...]
 
 
 class PersonDetector:
-    """Procesa un YOLO y detecta personas en un video"""
+    """Crea un detector de personas mediante YOLO"""
 
     def __init__(
         self,
         model_path: str,
         device: str,
-        confidence: float = 0.5,
+        tracker_path: str = "vision/config/bytetrack.yaml",
+        confidence: float = 0.25,
+        image_size: int = 640,
+        video_stride: int = 1,
+        include_image: bool = False,
     ) -> None:
         self.model = YOLO(model_path)
         self.device = device
+        self.tracker_path = tracker_path
         self.confidence = confidence
+        self.image_size = image_size
+        self.video_stride = video_stride
+        self.include_image = include_image
 
-    def detect_in_video(self, video_path: str) -> Iterator[DetectionFrame]:
-        """Procesa un video y produce cada frame con sus personas detectadas"""
+    def detect_in_video(
+        self,
+        video_source: str | int,
+    ) -> Iterator[DetectionFrame]:
+        """Procesa un video y devuelve cada frame con sus personas detectadas"""
 
-        results = self.model.predict(
-            source=video_path,
+        results = self.model.track(
+            source=video_source,
             stream=True,
+            persist=True,
+            tracker=self.tracker_path,
             classes=[0],
             conf=self.confidence,
             device=self.device,
+            imgsz=self.image_size,
+            vid_stride=self.video_stride,
+            stream_buffer=False,
             verbose=False,
         )
 
@@ -65,12 +82,40 @@ class PersonDetector:
 
             boxes = getattr(result, "boxes", None)
             coordinates = [] if boxes is None else boxes.xyxy.cpu().tolist()
+            track_ids_tensor = None if boxes is None else getattr(boxes, "id", None)
+            track_ids = (
+                []
+                if track_ids_tensor is None
+                else track_ids_tensor.int().cpu().tolist()
+            )
 
-            people = tuple(PersonDetection(*box) for box in coordinates)
+            people: list[PersonDetection] = []
+
+            for index, box in enumerate(coordinates):
+                track_id = (
+                    int(track_ids[index])
+                    if index < len(track_ids)
+                    else None
+                )
+
+                person = PersonDetection(
+                    x1=box[0],
+                    y1=box[1],
+                    x2=box[2],
+                    y2=box[3],
+                    track_id=track_id,
+                )
+                people.append(person)
+
+            image = (
+                np.asarray(original_image).copy()
+                if self.include_image
+                else None
+            )
 
             detection_frame = DetectionFrame(
-                image=np.asarray(original_image).copy(),
-                people=people,
+                image=image,
+                people=tuple(people),
             )
 
             yield detection_frame
