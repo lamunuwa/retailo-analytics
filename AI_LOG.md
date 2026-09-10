@@ -8,6 +8,63 @@ El orden de registro es ascendente. En la parte superior estará el registro má
 
 ---
 
+## [2026-09-10] Comunicacion API-YOLO por medio de SESSIONS
+
+**Quién:** @LaMunuwa | Anna Valentina
+
+**Herramienta:** ChatGPT
+
+**Qué se pidió:** Tuve un par de muchos problemas para hacer que esto funcionara; específicamente, tuve problemas con los dockers, con internal server error y, cuando ya se dignó a funcionar con el contrato de la API, no se comunicaba ni en local. Aparte de que empecé a hacer los típicos parches de arreglar código con más código y le pedí a Sol que me apoyara, usé el siguiente prompt:
+
+> Acabo de generar un modulo completo de la API, SESSIONS. Puedes ver un poco de informacion dentro de `BACKLOG.md`, estos endpoints son los que comunican la API con la vision artificial de nuestro proyecto, deberian comportarse algo asi: uno guarda el puro estado de como esta corriendo la vision (sessions), el otro guarda los settings en general de la session (results) y el otro guarda los datos que le importan al cliente (analytics), esas son sus responsabilidades y por eso existen.
+>
+> Ahora mismo genere la migracion, tests y demas. Quiero que valides esto:
+>
+> - Primero vas a entrar al .venv para ejecutar ruff, mypy, pytest. Si fallan arreglalos. Intenta no modificar la logica de programacion, exceptuando pytest, ahi la idea es que los test obligan al codigo a cumplirlos no al revez (solo te permito modificar los tests si son tests que con este nuevo endpoint quedaron obsoletos)
+> - Luego vas a validar la logica, dime si teoricamente debe funcionar, este nuevo endpoint DEBE adecuarse a lo que hay no lo que hay a el, eso es OBLIGATORIO
+> - La idea de vision obviamente es que funcione en la camara, sin embargo para fines practicos del proyecto usamos videos cargados en `vision/data/demo`, si encuentras algo en vision referente a reproducirse en camara eliminalo, es innecesario
+
+**Qué se generó / propuso:** Generó 3 cambios importantes:
+
+- Al parecer, mi lógica de visión también incluía código muerto que quería ejecutar la cámara, entonces lo elimino.
+- Corrigió Alembic.
+- Corrigió la forma en la que comunicó la API (No me gustó del todo la forma, porque no termino de entender qué hizo).
+
+**Qué se aceptó y qué se rechazó, y por qué:** Acepté todo en general, solo hubo una breve cosa: mi ChatGPT tiene cargado en su AGENTS.md que cada que necesite validar algo de dockers, lo simule y saque los logs. Aquí el problema fue que no prendían los dockers y quería mover algo dentro del .env (archivo ignorado en repo), cosa que no iba, no había forma de que eso arreglara el problema y lo decliné.
+
+**Validación:** Pytest, Ruff y Mypy aprobaron satisfactoriamente todas las reglas de cobertura y validación de tipos. ChatGPT mencionó que Docker estaba corriendo y lo probé, abrí el Swagger, creé una tienda, una cámara y la pasé al local de visión con `API_BASE_URL=http://localhost:8000 / CAMERA_ID=1 / DEMO_VIDEO_PATH=vision/data/demo/supermarket.mp4 / python -m vision.src.main`, después traje con GET las sesiones de la cámara creada y apareció la sesión correctamente, en proceso y finalizada.
+
+## [2026-09-09] Planteamiento del endpoint SESSION
+
+**Quién:** @LaMunuwa | Anna Valentina
+
+**Herramienta:** Github Copilot
+
+**Qué se pidió:** Durante el Sprint 1, funcioné como desarrolladora de la parte de YOLO y OpenCV; no entré en nada de la API más allá de revisiones básicas. Ahora necesitaba un breve roadmap más claro del que tenía para ejecutar un endpoint que conecte YOLO con nuestra API. Use este prompt:
+
+> Desde el inicio del proyecto habiamos planteado un backlog con todo lo que deberiamos tener para entregar el proyecto 100% funcional, yo tengo que retirarme un par de dias dado que tengo otra competencia. Mi parte siempre fue la vision artificial pero ahi ya ayude bastante, en este momento quiero apoyarles con la API.
+>
+> Revisa `BACKLOG.md`, ahi tendras toda la informacion de que debemos hacer en los diferentes modulos de RetaiLO Analytics.
+>
+> Ahora mismo un partner esta desarrollando zones. Por lo que queda:
+>
+> - Sessions
+> - Results
+> - Analytics
+> Todo esto tiene que ver con la coneccion vision con API, apoyare por ese lado.
+>
+> Despues de entender este contexto revisa: `app/src` y `vision/src`, revisa todos los modulos y capas que hay. Despues me diras que tengo que hacer para generar SESSIONS. La informacion de que hace esta en backlog, pero en general cuando yo prendo la parte de vision se autogenera un POST de que inicio la session con algunos campos.
+
+Despues de este prompt me dio lo solicitado pero antes de ejecutar le pregunte como veia mejor el dividir responsabilidades con este prompt:
+
+> Tambien, tanto los endpoint de sessions, results y analytics son como que van muy de la mano. Crees que es buena idea mantenerlos los 3 o mejor hacemos solo 2 o hacemos un frankstain de los 3. Dame tu opinion. Segun yo uno guarda el puro estado de como esta corriendo la vision, el otro guarda los settings en general de la session y el otro guarda los datos que le importan al cliente, esas son sus responsabilidades y por eso existen, pero que opinas tu...
+
+**Qué se generó / propuso:** Genero el roadmap para lograr que "funcionara a la primera" el endpoint de SESSIONS junto con la comunicación API-YOLO; el contrato ya lo tenía anotado porque fue de lo primero que comenté con ChatGPT antes de siquiera empezar la semana 7.
+
+**Qué se aceptó y qué se rechazó, y por qué:** En este tipo de solicitudes de planificación y/o estructuración de ideas no suelo rechazar muchas cosas, dado que directamente no aparecen los botones de rechazar, por lo que la única modificación que se hizo fue el segundo prompt.
+
+**Validación:** N/A
+
 ## [2026-09-09] Correcciones finales del sprint 1
 
 **Quién:** @LaMunuwa | Anna Valentina
