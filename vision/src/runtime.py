@@ -3,8 +3,10 @@ from dataclasses import dataclass
 
 import torch
 
-DEFAULT_VIDEO_SOURCE = "vision/data/demo/supermarket.mp4"
+DEFAULT_DEMO_VIDEO_PATH = "vision/data/demo/supermarket.mp4"
 DEFAULT_MODEL_PATH = "yolov8n.pt"
+DEFAULT_API_URL = "http://localhost:8000"
+DEFAULT_CAMERA_ID = 1
 
 
 @dataclass(frozen=True)
@@ -12,23 +14,19 @@ class VisionRuntimeConfig:
     """Representa la configuracion local para ejecutar Vision"""
 
     device: str
-    video_source: str | int
+    video_path: str
     model_path: str
     tracker_path: str
+    camera_id: int
+    api_url: str
 
 
-def get_video_source() -> str | int:
-    """Obtiene la camara o video configurado para la deteccion"""
+def get_demo_video_path() -> str:
+    """Obtiene el video demo que se procesará localmente."""
 
-    configured_source = os.getenv("CAMERA_SOURCE", "").strip()
+    configured_path = os.getenv("DEMO_VIDEO_PATH", "").strip()
 
-    if not configured_source:
-        return DEFAULT_VIDEO_SOURCE
-
-    if configured_source.isdigit():
-        return int(configured_source)
-
-    return configured_source
+    return configured_path or DEFAULT_DEMO_VIDEO_PATH
 
 
 def get_model_path() -> str:
@@ -53,6 +51,28 @@ def get_tracker_path() -> str:
     return "vision/config/bytetrack.yaml"
 
 
+def get_camera_id() -> int:
+    """Obtiene el camera_id configurado para asociar con la API"""
+
+    configured_camera_id = os.getenv("CAMERA_ID", "").strip()
+
+    if configured_camera_id and configured_camera_id.isdigit():
+        return int(configured_camera_id)
+
+    return DEFAULT_CAMERA_ID
+
+
+def get_api_url() -> str:
+    """Obtiene la URL base de la API"""
+
+    configured_api_url = os.getenv("API_BASE_URL", "").strip()
+
+    if configured_api_url:
+        return configured_api_url
+
+    return DEFAULT_API_URL
+
+
 def get_device() -> str:
     """Selecciona CUDA si existe, de lo contrario, usa CPU"""
 
@@ -69,9 +89,11 @@ def get_runtime_config() -> VisionRuntimeConfig:
 
     runtime_config = VisionRuntimeConfig(
         device=get_device(),
-        video_source=get_video_source(),
+        video_path=get_demo_video_path(),
         model_path=get_model_path(),
         tracker_path=get_tracker_path(),
+        camera_id=get_camera_id(),
+        api_url=get_api_url(),
     )
 
     return runtime_config
