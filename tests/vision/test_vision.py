@@ -51,23 +51,27 @@ def test_get_device_uses_cuda_when_available() -> None:
 def test_runtime_uses_environment_values(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("CAMERA_SOURCE", "0")
+    monkeypatch.setenv("DEMO_VIDEO_PATH", "vision/data/demo/custom.mp4")
     monkeypatch.setenv("MODEL_PATH", "model.pt")
     monkeypatch.setenv("TRACKER_PATH", "tracker.yaml")
+    monkeypatch.setenv("CAMERA_ID", "42")
+    monkeypatch.setenv("API_BASE_URL", "http://api:8000")
 
-    assert runtime.get_video_source() == 0
+    assert runtime.get_demo_video_path() == "vision/data/demo/custom.mp4"
     assert runtime.get_model_path() == "model.pt"
     assert runtime.get_tracker_path() == "tracker.yaml"
+    assert runtime.get_camera_id() == 42
+    assert runtime.get_api_url() == "http://api:8000"
 
 
 def test_runtime_uses_defaults_when_environment_is_empty(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.delenv("CAMERA_SOURCE", raising=False)
+    monkeypatch.delenv("DEMO_VIDEO_PATH", raising=False)
     monkeypatch.delenv("MODEL_PATH", raising=False)
     monkeypatch.delenv("TRACKER_PATH", raising=False)
 
-    assert runtime.get_video_source() == runtime.DEFAULT_VIDEO_SOURCE
+    assert runtime.get_demo_video_path() == runtime.DEFAULT_DEMO_VIDEO_PATH
     assert runtime.get_model_path() == runtime.DEFAULT_MODEL_PATH
     assert runtime.get_tracker_path() == "vision/config/bytetrack.yaml"
 
@@ -75,17 +79,21 @@ def test_runtime_uses_defaults_when_environment_is_empty(
 def test_runtime_config_groups_execution_values() -> None:
     with (
         patch.object(runtime, "get_device", return_value="cpu"),
-        patch.object(runtime, "get_video_source", return_value="video.mp4"),
+        patch.object(runtime, "get_demo_video_path", return_value="video.mp4"),
         patch.object(runtime, "get_model_path", return_value="model.pt"),
         patch.object(runtime, "get_tracker_path", return_value="tracker.yaml"),
+        patch.object(runtime, "get_camera_id", return_value=7),
+        patch.object(runtime, "get_api_url", return_value="http://api:8000"),
     ):
         runtime_config = runtime.get_runtime_config()
 
     assert runtime_config == runtime.VisionRuntimeConfig(
         device="cpu",
-        video_source="video.mp4",
+        video_path="video.mp4",
         model_path="model.pt",
         tracker_path="tracker.yaml",
+        camera_id=7,
+        api_url="http://api:8000",
     )
 
 
@@ -106,16 +114,20 @@ def test_main_runs_detection_and_prints_metrics(
     )
     runtime_config = runtime.VisionRuntimeConfig(
         device="cpu",
-        video_source="video.mp4",
+        video_path="video.mp4",
         model_path="model.pt",
         tracker_path="tracker.yaml",
+        camera_id=1,
+        api_url="http://api:8000",
     )
 
     with (
         patch.object(vision_main, "get_configured_zones", return_value=(create_zone(),)),
         patch.object(vision_main, "get_runtime_config", return_value=runtime_config),
         patch.object(vision_main, "run_detection", return_value=session_result),
+        patch.object(vision_main, "RetailoAnalyticsClient") as client_class,
     ):
+        client_class.return_value.create_session.return_value = 17
         result = vision_main.main()
 
     output = capsys.readouterr().out
@@ -123,6 +135,12 @@ def test_main_runs_detection_and_prints_metrics(
     assert result == session_result
     assert "Personas rastreadas: 1" in output
     assert "entrada: 1" in output
+    client_class.return_value.create_session.assert_called_once()
+    client_class.return_value.update_session.assert_called_once_with(
+        session_id=17,
+        status="completed",
+        finished_at=session_result.finished_at,
+    )
 
 
 # Detection ---------------------------------------------------
@@ -253,7 +271,7 @@ def test_session_collects_tracking_metrics() -> None:
         result = session.run_detection(
             device="cpu",
             zones=(create_zone(),),
-            video_source="video.mp4",
+            video_path="video.mp4",
             model_path="model.pt",
             clock=iter((0.0, 1.0, 2.0, 2.0)).__next__,
         )
@@ -278,7 +296,7 @@ def test_session_expires_unseen_tracking_ids() -> None:
         result = session.run_detection(
             device="cpu",
             zones=(create_zone(),),
-            video_source="video.mp4",
+            video_path="video.mp4",
             model_path="model.pt",
             track_ttl_seconds=60.0,
             clock=iter((0.0, 61.0, 61.0)).__next__,
