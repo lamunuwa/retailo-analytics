@@ -8,6 +8,26 @@ El orden de registro es ascendente. En la parte superior estará el registro má
 
 ---
 
+## [2026-09-10] Auditoría de infraestructura para el cierre del Sprint 1
+
+**Quién:** @aleixscarbo | Aleixs Carbonell
+
+**Herramienta:** GitHub Copilot
+
+**Qué se pidió:** Realizar una revisión de código (Peer Review) del PR #23 como auditoría de infraestructura para el cierre del Sprint 1. Se evaluó la resiliencia del Healthcheck, la inyección de dependencias y la configuración de PostgreSQL. El prompt utilizado fue:
+> "Actúa como un Staff Software Engineer especialista en Backend e Infraestructura. Realiza un Code Review profundo... Evalúa la resiliencia del sistema en producción, el Healthcheck, y el Connection Pool."
+
+**Qué produjo la IA vs Qué detectó el Humano?:**
+
+- **Hallazgos de la IA:** Detectó un antipatrón arquitectónico crítico: el `Engine` de SQLAlchemy se estaba instanciando por cada request, destruyendo el *Connection Pooling* y causando un alto overhead de conexiones TCP. También detectó la falta de un *statement_timeout* en el Healthcheck síncrono, lo que arriesgaba la saturación del threadpool de FastAPI.
+- **Hallazgo del Humano:** Actuando como Tech Lead, validé mediante pruebas locales que la actualización de dependencias (`FastAPI` y `httpx`) no rompió la lógica matemática (56/56 tests pasaron con 88% de cobertura). Intercepté el PR antes del merge a `main` para prevenir un colapso en producción bajo carga.
+
+**Conclusiones Clave sobre la IA en Code Reviews:**
+
+- El análisis estático de la IA es superior a las pruebas unitarias y de cobertura para detectar vulnerabilidades de infraestructura y ciclo de vida de conexiones. Un código con 100% de cobertura puede seguir siendo inseguro para producción si no respeta los patrones de concurrencia.
+
+**Validación:** Se ejecutaron las pruebas locales después de actualizar las dependencias `FastAPI` y `httpx`. Los 56 tests pasaron y la cobertura quedó en 88%, confirmando que los cambios no rompieron la lógica existente. La auditoría de infraestructura permitió identificar riesgos de producción que no quedan cubiertos por la cobertura automatizada.
+
 ## [2026-09-09] Correcciones finales del sprint 1
 
 **Quién:** @LaMunuwa | Anna Valentina
