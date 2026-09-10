@@ -100,12 +100,7 @@ Campos mínimos posibles:
 
 ```json
 {
-  "source_type": "demo_video",
-  "started_at": "2026-07-30T12:00:00Z",
-  "settings": {
-    "frame_sample_rate": 5,
-    "confidence_threshold": 0.45
-  }
+  "started_at": "2026-07-30T12:00:00Z"
 }
 ```
 
@@ -200,7 +195,7 @@ El dashboard web es opcional y no debe bloquear el MVP: los endpoints analítico
 
 ### Agente local de procesamiento (MH)
 
-- Procesar `demo_video`, webcam y, si hay tiempo, streams RTSP.
+- Procesar videos demo cargados en `vision/data/demo`.
 - Detectar personas con YOLO y OpenCV.
 - Configurar el umbral de confianza y el muestreo de frames.
 - Contar detecciones y asignarlas a zonas poligonales configurables.
@@ -222,6 +217,42 @@ El dashboard web es opcional y no debe bloquear el MVP: los endpoints analítico
 ## User Stories
 
 El orden de registro es ascendente. En la parte superior estará la US más actual; en la parte inferior, las más antiguas. No es necesario registrar como US correcciones o cambios menores; es una guía para el desarrollo de x feature.
+
+## Sprint 2
+
+### 10. Gestión de Sesiones de Video (Sessions CRUD)
+
+**Prioridad:** Must Have (MH)
+
+**Dificultad:** 5 Story Points
+
+**As** desarrollador de la API, **I want to** crear, consultar y actualizar sesiones de video vinculadas a cámaras, **So that** pueda rastrear el ciclo de vida del procesamiento de video (running → completed/failed) y correlacionar resultados con cada ejecución.
+
+```gherkin
+Scenario: Crear una sesión al iniciar el procesamiento de video
+  Given un camera_id válido y un payload JSON con "started_at" opcional
+  When el cliente/vision envía una petición POST a /cameras/{camera_id}/sessions
+  Then la API valida que la cámara existe, crea la sesión con status="running"
+  And responde con código 201 Created y los datos de la sesión (id, camera_id, status, started_at).
+
+Scenario: Actualizar el estado de una sesión al finalizar
+  Given un session_id válido y un payload JSON con "status" y "finished_at"
+  When el cliente/vision envía una petición PATCH a /sessions/{session_id}
+  Then la API valida la sesión, actualiza status (completed|failed) y finished_at
+  And responde con código 200 OK y los datos de la sesión actualizada.
+
+Scenario: Consultar el estado de una sesión en progreso
+  Given un session_id válido
+  When se envía una petición GET a /sessions/{session_id}
+  Then la API retorna los datos completos de la sesión (id, camera_id, status, started_at, finished_at)
+  And permite al cliente monitorear si el procesamiento está en curso o completado.
+
+Scenario: Listar sesiones de una cámara específica
+  Given un camera_id válido
+  When se envía una petición GET a /cameras/{camera_id}/sessions
+  Then la API devuelve un listado paginado de todas las sesiones históricas
+  And ordena por started_at descendente por defecto.
+```
 
 ## Sprint 1
 
