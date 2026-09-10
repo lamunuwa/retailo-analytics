@@ -1,9 +1,22 @@
 from collections.abc import Sequence
+from typing import Protocol
 
 from sqlalchemy.orm import Session
 
 from app.src.models.analytics import DetectionEvent
 from app.src.schemas.analytics import DetectionEventCreate, DetectionFilters
+
+
+class AnalyticsRepositoryProtocol(Protocol):
+    """Contrato de persistencia requerido por la capa de analítica."""
+
+    def create(self, event_data: DetectionEventCreate) -> DetectionEvent:
+        """Persiste un nuevo evento de detección."""
+        ...
+
+    def get_all(self, filters: DetectionFilters | None = None) -> Sequence[DetectionEvent]:
+        """Obtiene eventos de detección con filtros opcionales."""
+        ...
 
 
 class AnalyticsRepository:

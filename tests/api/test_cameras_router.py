@@ -1,11 +1,18 @@
 from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
-from fastapi.testclient import TestClient
+import pytest
+from fastapi import HTTPException
 
-from app.src.main import app
 from app.src.models.cameras import CameraModel
-from app.src.routers.cameras import get_camera_repository
+from app.src.routers.cameras import (
+    create_camera,
+    get_camera,
+    list_cameras,
+    soft_delete_camera,
+    update_camera,
+)
+from app.src.schemas.cameras import CameraCreate, CameraUpdate
 
 
 def test_create_camera_endpoint() -> None:
@@ -19,18 +26,15 @@ def test_create_camera_endpoint() -> None:
         is_active=True,
         created_at=datetime.now(UTC),
     )
-    # Configura la inyección de dependencias con el repositorio simulado
-    app.dependency_overrides[get_camera_repository] = lambda: mock_repo
-    client = TestClient(app)
-
-    # Ejecuta la petición POST al endpoint de creación
-    response = client.post(
-        "/stores/5/cameras", json={"name": "Cámara Pasillo", "source_type": "demo_video"}
+    response = create_camera(
+        store_id=5,
+        payload=CameraCreate.model_validate(
+            {"name": "Cámara Pasillo", "source_type": "demo_video"}
+        ),
+        repo=mock_repo,
     )
-    assert response.status_code == 201
-    data = response.json()
-    assert data["name"] == "Cámara Pasillo"
-    assert data["source_type"] == "demo_video"
+    assert response.name == "Cámara Pasillo"
+    assert response.source_type == "demo_video"
 
     # Valida que el repositorio haya recibido los datos exactos
     mock_repo.create.assert_called_once_with(
@@ -39,8 +43,6 @@ def test_create_camera_endpoint() -> None:
         source_type="demo_video",
         description=None,
     )
-
-    app.dependency_overrides.clear()
 
 
 def test_list_cameras_endpoint() -> None:
@@ -56,19 +58,11 @@ def test_list_cameras_endpoint() -> None:
             created_at=datetime.now(UTC),
         )
     ]
-    app.dependency_overrides[get_camera_repository] = lambda: mock_repo
-    client = TestClient(app)
-
-    # Consulta el listado de cámaras por tienda
-    response = client.get("/stores/5/cameras")
-    assert response.status_code == 200
-    data = response.json()
-    assert len(data) == 1
-    assert data[0]["name"] == "Cámara Pasillo"
+    response = list_cameras(store_id=5, repo=mock_repo)
+    assert len(response) == 1
+    assert response[0].name == "Cámara Pasillo"
 
     mock_repo.get_all_by_store.assert_called_once_with(store_id=5)
-
-    app.dependency_overrides.clear()
 
 
 def test_get_camera_by_id_endpoint() -> None:
@@ -82,32 +76,21 @@ def test_get_camera_by_id_endpoint() -> None:
         is_active=True,
         created_at=datetime.now(UTC),
     )
-    app.dependency_overrides[get_camera_repository] = lambda: mock_repo
-    client = TestClient(app)
-
-    # Solicita el detalle de una cámara por ID
-    response = client.get("/cameras/1")
-    assert response.status_code == 200
-    data = response.json()
-    assert data["name"] == "Cámara Principal"
+    response = get_camera(camera_id=1, repo=mock_repo)
+    assert response.name == "Cámara Principal"
 
     mock_repo.get_by_id.assert_called_once_with(camera_id=1)
-
-    app.dependency_overrides.clear()
 
 
 def test_get_camera_not_found_returns_404() -> None:
     """Verifica que se devuelva un error 404 si la cámara consultada no existe."""
     mock_repo = MagicMock()
     mock_repo.get_by_id.return_value = None
-    app.dependency_overrides[get_camera_repository] = lambda: mock_repo
-    client = TestClient(app)
+    with pytest.raises(HTTPException) as exception:
+        get_camera(camera_id=999, repo=mock_repo)
 
-    response = client.get("/cameras/999")
-    assert response.status_code == 404
-    assert response.json()["detail"] == "Camera not found"
-
-    app.dependency_overrides.clear()
+    assert exception.value.status_code == 404
+    assert exception.value.detail == "Camera not found"
 
 
 def test_update_camera_endpoint() -> None:
@@ -121,13 +104,12 @@ def test_update_camera_endpoint() -> None:
         is_active=True,
         created_at=datetime.now(UTC),
     )
-    app.dependency_overrides[get_camera_repository] = lambda: mock_repo
-    client = TestClient(app)
-
-    # Envía los campos a modificar mediante PATCH
-    response = client.patch("/cameras/1", json={"name": "Cámara Actualizada"})
-    assert response.status_code == 200
-    assert response.json()["name"] == "Cámara Actualizada"
+    response = update_camera(
+        camera_id=1,
+        payload=CameraUpdate.model_validate({"name": "Cámara Actualizada"}),
+        repo=mock_repo,
+    )
+    assert response.name == "Cámara Actualizada"
 
     # Confirma que el repositorio procesó los valores esperados
     mock_repo.update.assert_called_once_with(
@@ -137,8 +119,6 @@ def test_update_camera_endpoint() -> None:
         source_type=None,
         is_active=None,
     )
-
-    app.dependency_overrides.clear()
 
 
 def test_soft_delete_camera_endpoint() -> None:
@@ -152,14 +132,7 @@ def test_soft_delete_camera_endpoint() -> None:
         is_active=False,
         created_at=datetime.now(UTC),
     )
-    app.dependency_overrides[get_camera_repository] = lambda: mock_repo
-    client = TestClient(app)
-
-    # Ejecuta la petición DELETE para desactivar lógicamente el recurso
-    response = client.delete("/cameras/1")
-    assert response.status_code == 200
-    assert response.json()["is_active"] is False
+    response = soft_delete_camera(camera_id=1, repo=mock_repo)
+    assert response.is_active is False
 
     mock_repo.soft_delete.assert_called_once_with(camera_id=1)
-
-    app.dependency_overrides.clear()

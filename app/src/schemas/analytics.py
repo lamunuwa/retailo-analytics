@@ -1,5 +1,4 @@
-
-from pydantic import AwareDatetime, BaseModel, Field
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field
 
 
 class DetectionEventBase(BaseModel):
@@ -22,8 +21,7 @@ class DetectionEventResponse(DetectionEventBase):
 
     status: str = Field(default="received", description="Estado del procesamiento")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DetectionFilters(BaseModel):

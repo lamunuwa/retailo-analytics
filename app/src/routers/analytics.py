@@ -61,7 +61,7 @@ def get_detections(
     """Lista eventos con filtros opcionales y paginación."""
     if start_date is not None and end_date is not None and start_date > end_date:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="start_date debe ser anterior o igual a end_date",
         )
     filters = DetectionFilters(

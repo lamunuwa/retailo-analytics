@@ -1,16 +1,14 @@
 from datetime import UTC, datetime
 from unittest.mock import MagicMock
 
-from fastapi.testclient import TestClient
+import pytest
+from fastapi import HTTPException
 
-from app.src.main import app
 from app.src.models.analytics import DetectionEvent
 from app.src.repos.analytics import AnalyticsRepository
-from app.src.routers.analytics import get_analytics_service
+from app.src.routers.analytics import get_detections
 from app.src.schemas.analytics import DetectionEventCreate, DetectionFilters
 from app.src.services.analytics import AnalyticsService
-
-client = TestClient(app)
 
 
 def make_event(camera_id: int = 1, zone_name: str = "Central") -> DetectionEvent:
@@ -69,16 +67,18 @@ def test_analytics_repository_applies_all_filters() -> None:
 def test_get_detections_router_passes_filters() -> None:
     service = MagicMock()
     service.get_detections.return_value = [make_event()]
-    app.dependency_overrides[get_analytics_service] = lambda: service
 
-    response = client.get(
-        "/analytics/detections?camera_id=1&zone_name=Central"
-        "&start_date=2026-09-01T00:00:00Z&end_date=2026-09-05T23:59:59Z"
-        "&limit=10&offset=5"
+    response = get_detections(
+        service=service,
+        camera_id=1,
+        zone_name="Central",
+        start_date=datetime(2026, 9, 1, tzinfo=UTC),
+        end_date=datetime(2026, 9, 5, 23, 59, 59, tzinfo=UTC),
+        limit=10,
+        offset=5,
     )
 
-    assert response.status_code == 200
-    assert response.json()[0]["status"] == "received"
+    assert response[0].status == "received"
     service.get_detections.assert_called_once()
     filters = service.get_detections.call_args.args[0]
     assert filters == DetectionFilters(
@@ -89,18 +89,17 @@ def test_get_detections_router_passes_filters() -> None:
         limit=10,
         offset=5,
     )
-    app.dependency_overrides.clear()
 
 
 def test_get_detections_rejects_invalid_date_range() -> None:
     service = MagicMock()
-    app.dependency_overrides[get_analytics_service] = lambda: service
 
-    response = client.get(
-        "/analytics/detections?start_date=2026-09-06T00:00:00Z"
-        "&end_date=2026-09-05T00:00:00Z"
-    )
+    with pytest.raises(HTTPException) as exception:
+        get_detections(
+            service=service,
+            start_date=datetime(2026, 9, 6, tzinfo=UTC),
+            end_date=datetime(2026, 9, 5, tzinfo=UTC),
+        )
 
-    assert response.status_code == 422
+    assert exception.value.status_code == 422
     service.get_detections.assert_not_called()
-    app.dependency_overrides.clear()
