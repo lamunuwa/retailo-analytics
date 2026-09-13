@@ -225,6 +225,34 @@ El orden de registro es ascendente. En la parte superior estará la US más actu
 
 ## Sprint 1
 
+### 9. Gestión de Cámaras (Cameras CRUD)
+
+**Prioridad:** Must Have (MH)
+
+**Dificultad:** 3 Story Points
+
+**As** a desarrollador de la API, **I want to** registrar, consultar, actualizar y desactivar cámaras vinculadas a una tienda específica, **So that** pueda estructurar la procedencia del video y preparar el terreno para la configuración de zonas ROI.
+
+```gherkin
+Scenario: Crear una cámara vinculada a una tienda existente
+  Given un store_id válido y un payload JSON con "name" y "source_type"
+  When el cliente envía una petición POST a /stores/{store_id}/cameras
+  Then la API valida la relación, guarda la cámara en la base de datos
+  And responde con código 201 Created y los datos de la cámara generada.
+
+Scenario: Listar las cámaras de una tienda específica
+  Given un store_id que contiene múltiples cámaras activas
+  When se envía una petición GET a /stores/{store_id}/cameras
+  Then la API devuelve un listado con las cámaras correspondientes
+  And omite aquellas marcadas con is_active en false.
+
+Scenario: Desactivar una cámara (Soft Delete)
+  Given el camera_id de una cámara activa
+  When se envía una petición DELETE a /cameras/{camera_id}
+  Then la API actualiza la cámara marcando is_active como false
+  And retorna 200 OK sin eliminar el registro físicamente.
+```
+
 ### 8. Ingesta de eventos de detección de personas
 
 **Prioridad:** Must Have (MH)

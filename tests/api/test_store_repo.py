@@ -37,6 +37,17 @@ def test_store_repository_lists_active_stores() -> None:
     assert stores[0].name == "Tienda Activa"
 
 
+def test_store_repository_gets_store_by_id() -> None:
+    mock_session = MagicMock()
+    store = StoreModel(id=1, name="Tienda Centro", is_active=True)
+    mock_session.get.return_value = store
+
+    result = StoreRepository(session=mock_session).get_by_id(store_id=1)
+
+    assert result is store
+    mock_session.get.assert_called_once_with(StoreModel, 1)
+
+
 def test_store_repository_soft_deletes_store() -> None:
     mock_session = MagicMock()
     tienda_mock = StoreModel(id=1, name="Tienda a borrar", is_active=True)

@@ -1,4 +1,4 @@
-fastapi
+fastapi==0.115.12
 uvicorn[standard]
 sqlalchemy
 alembic
@@ -8,6 +8,6 @@ lap>=0.5.12
 opencv-python
 pytest
 pytest-cov
-httpx
+httpx==0.28.1
 ruff
 mypy

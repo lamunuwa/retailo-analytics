@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.src.core.db import get_db
 from app.src.models.stores import StoreModel
 from app.src.repos.stores import StoreRepository, StoreRepositoryProtocol
-from app.src.schemas.stores import StoreCreate, StoreResponse
+from app.src.schemas.stores import StoreCreate, StoreResponse, StoreUpdate
 
 router = APIRouter(prefix="/stores", tags=["Stores"])
 
@@ -32,12 +32,13 @@ def list_stores(
     return repo.get_all_active()
 
 
-@router.delete("/{store_id}", response_model=StoreResponse)
-def soft_delete_store(
+@router.get("/{store_id}", response_model=StoreResponse)
+def get_store(
     store_id: int,
     repo: Annotated[StoreRepositoryProtocol, Depends(get_store_repository)],
 ) -> StoreModel:
-    store = repo.soft_delete(store_id)
+    """Obtiene una tienda por su identificador."""
+    store = repo.get_by_id(store_id)
     if store is None:
         raise HTTPException(status_code=404, detail="Store not found")
     return store
@@ -46,10 +47,22 @@ def soft_delete_store(
 @router.patch("/{store_id}", response_model=StoreResponse)
 def update_store(
     store_id: int,
-    payload: StoreCreate,
+    payload: StoreUpdate,
     repo: Annotated[StoreRepositoryProtocol, Depends(get_store_repository)],
 ) -> StoreModel:
+    """Actualiza únicamente los campos proporcionados por el cliente."""
     store = repo.update(store_id=store_id, name=payload.name)
+    if store is None:
+        raise HTTPException(status_code=404, detail="Store not found")
+    return store
+
+
+@router.delete("/{store_id}", response_model=StoreResponse)
+def soft_delete_store(
+    store_id: int,
+    repo: Annotated[StoreRepositoryProtocol, Depends(get_store_repository)],
+) -> StoreModel:
+    store = repo.soft_delete(store_id)
     if store is None:
         raise HTTPException(status_code=404, detail="Store not found")
     return store

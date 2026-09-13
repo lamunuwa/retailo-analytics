@@ -8,6 +8,152 @@ El orden de registro es ascendente. En la parte superior estará el registro má
 
 ---
 
+## [2026-09-10] Auditoría de infraestructura para el cierre del Sprint 1
+
+**Quién:** @aleixscarbo | Aleixs Carbonell
+
+**Herramienta:** GitHub Copilot
+
+**Qué se pidió:** Realizar una revisión de código (Peer Review) del PR #23 como auditoría de infraestructura para el cierre del Sprint 1. Se evaluó la resiliencia del Healthcheck, la inyección de dependencias y la configuración de PostgreSQL. El prompt utilizado fue:
+> "Actúa como un Staff Software Engineer especialista en Backend e Infraestructura. Realiza un Code Review profundo... Evalúa la resiliencia del sistema en producción, el Healthcheck, y el Connection Pool."
+
+**Qué produjo la IA vs Qué detectó el Humano?:**
+
+- **Hallazgos de la IA:** Detectó un antipatrón arquitectónico crítico: el `Engine` de SQLAlchemy se estaba instanciando por cada request, destruyendo el *Connection Pooling* y causando un alto overhead de conexiones TCP. También detectó la falta de un *statement_timeout* en el Healthcheck síncrono, lo que arriesgaba la saturación del threadpool de FastAPI.
+- **Hallazgo del Humano:** Actuando como Tech Lead, validé mediante pruebas locales que la actualización de dependencias (`FastAPI` y `httpx`) no rompió la lógica matemática (56/56 tests pasaron con 88% de cobertura). Intercepté el PR antes del merge a `main` para prevenir un colapso en producción bajo carga.
+
+**Conclusiones Clave sobre la IA en Code Reviews:**
+
+- El análisis estático de la IA es superior a las pruebas unitarias y de cobertura para detectar vulnerabilidades de infraestructura y ciclo de vida de conexiones. Un código con 100% de cobertura puede seguir siendo inseguro para producción si no respeta los patrones de concurrencia.
+
+**Validación:** Se ejecutaron las pruebas locales después de actualizar las dependencias `FastAPI` y `httpx`. Los 56 tests pasaron y la cobertura quedó en 88%, confirmando que los cambios no rompieron la lógica existente. La auditoría de infraestructura permitió identificar riesgos de producción que no quedan cubiertos por la cobertura automatizada.
+
+## [2026-09-09] Correcciones finales del sprint 1
+
+**Quién:** @LaMunuwa | Anna Valentina
+
+**Herramienta:** ChatGPT
+
+**Qué se pidió:** Hice una revision un poco mas profunda que lo que comunmente hice dentro del proyecto. Hasta este punto todo funcionaba teoricamente, pero tocaba dejarlo vivo realmente. Encontre multiples puntos de mejora y algun que otro error puntual. Este fue el prompt
+:
+> Te voy a enlistar los errores que vas a resolver:
+>
+> - Primero que nada pytest no pasa, marca errores y warnings. Ejecuta el .venv y haz pytest
+> - Dentro de `app/src/repos/analytics.py` tenemos un repositorio sin Protocol, no cumple correctamente con que las capas superiores no dependen de inferiores si no de abstracciones, genera un Protocol de AnalyticsRepository, para que tengamos la asbtraccion y los modulos se reproducen con esa abstract
+> - En el swagger, seccion Stores, sale primero get, post, delete, patch, que aparezca en este orden: Post, get, patch, delete. Aprovecha para agregarle el Get que le falta, tenemos enlistado pero no tenemos busqueda por id
+> - Revisa que las logicas de patch sean de patch y no de put
+> - No tenemos router de health, el que tenemos ahorita es el basico de FastAPI. Agrega algo asi y elimina el endpoint basico de main.py:
+>
+> ```python
+> import os
+> import time
+> from datetime import datetime
+>
+> from fastapi import APIRouter, Depends, status
+> from fastapi.responses import JSONResponse
+> from sqlalchemy import text
+> from sqlalchemy.orm import Session
+>
+> from app.db import get_db
+>
+> router = APIRouter(tags=["HEALTH"])
+>
+> START = time.time()
+> VERSION = os.getenv("SensorHub", "1.0.0")
+>
+>
+> @router.get("/health", status_code=status.HTTP_200_OK)
+> def health_check(db: Session = Depends(get_db)) -> JSONResponse:
+>
+>    uptime = round(time.time() - START, 2)
+>
+>     db_status = "healthy"
+>     db_latency = None
+>
+>     try:
+>         start_db_time = time.perf_counter()
+>         db.execute(text("SELECT 1"))
+>         db_latency = round((time.perf_counter() - start_db_time) * 1000, 2)
+>     except Exception as e:
+>         db_status = f"unhealthy: {str(e)}"
+>
+>     is_healthy = db_status == "healthy"
+>     global_status = "ok" if is_healthy else "degraded"
+>
+>     payload = {
+>         "status": global_status,
+>         "version": VERSION,
+>         "timestamp": datetime.now().isoformat(),
+>         "uptime_seconds": uptime,
+>         "checks": {
+>             "database": {
+>                 "status": db_status,
+>                 "latency": db_latency,
+>             }
+>         },
+>     }
+>
+>    status_code = status.HTTP_200_OK if is_healthy else status.HTTP_503_SERVICE_UNAVAILABLE
+>
+>     return JSONResponse(content=payload, status_code=status_code)
+>```
+>
+> - Agrega algo asi en main pero con los datos que manejamos:
+>
+> ```python
+> from fastapi import FastAPI
+> from fastapi.responses import RedirectResponse
+>
+> from app.routers import alerts, health, readings, sensors
+>
+> tags_metadata = [
+>     {
+>         "name": "SENSORS",
+>         "description": "Operaciones para el manejo de inventario de sensores.",
+>     },
+>     {
+>         "name": "READINGS",
+>         "description": "Registro y consultas de lecturas de sensores.",
+>     },
+>     {
+>         "name": "ALERTS",
+>         "description": "Consultas y status de alertas generadas por sensores.",
+>     },
+>     {
+>         "name": "HEALTH",
+>         "description": "Verifica la salud del servicio",
+>     },
+> ]
+>
+> app = FastAPI(
+>     title="SensorHub API",
+>     version="1.0.0",
+>     openapi_tags=tags_metadata,
+> )
+>
+> app.include_router(sensors.router)
+> app.include_router(readings.router)
+> app.include_router(alerts.router)
+>
+>
+> @app.get("/", include_in_schema=False)
+> async def root() -> RedirectResponse:
+>     return RedirectResponse(url="/docs")
+> ```
+>
+> Al final haras lo tipico: activa el .venv, mypy, ruff, pytest y aprovecha para verificar los logs del docker, para ver que todo este bien y que corra en la ultima imagen, de ser necesario genera la migracion en alembic (aunque no deberias tocar los esquemas).
+
+**Qué se generó / propuso:** Lo más importante son las cosas que detecto que yo no:
+
+- Detecto algunas incompatibilidades que elimino fijando versiones específicas de FastAPI que se pueden ver en `requirements.txt`
+- Agrego a la db `from sqlalchemy import create_engine` y `from sqlalchemy.engine import Engine`. Reviso incompatibilidades con Docker y producción por este cambio y no encuentro nada. Habrá que avanzar y ver cómo se comporta
+
+De ahí en fuera, ejecuto todo tal cual se lo solicité.
+
+**Qué se aceptó y qué se rechazó, y por qué:** Solo no acepte un archivo que nunca vi, parece ser que era para pytest, se llamaba `conftest.py`. Cuando lo decline agrego el create_engine, lo que si entiendo y lo mantuve.
+
+**Validación:** Pytest y Ruff aprobaron satisfactoriamente todas las reglas de cobertura y validación de tipos tras la implementación.
+
 ## [2026-09-08] Módulo Cameras CRUD y estabilización de pruebas
 
 **Quién:** @FrankArmed | Frank Asael

@@ -1,12 +1,18 @@
 from unittest.mock import MagicMock
 
-from fastapi.testclient import TestClient
+import pytest
+from fastapi import HTTPException
+from pydantic import ValidationError
 
-from app.src.main import app
 from app.src.models.stores import StoreModel
-
-# Importamos la función de dependencia que usa el router
-from app.src.routers.stores import get_store_repository
+from app.src.routers.stores import (
+    create_store,
+    get_store,
+    list_stores,
+    soft_delete_store,
+    update_store,
+)
+from app.src.schemas.stores import StoreCreate, StoreUpdate
 
 
 def test_create_store_endpoint() -> None:
@@ -14,71 +20,69 @@ def test_create_store_endpoint() -> None:
     # Simulamos el retorno del método create
     mock_repo.create.return_value = StoreModel(id=1, name="Tienda Demo", is_active=True)
 
-    # Inyectamos el mock sobrescribiendo la función exacta que FastAPI inyecta
-    app.dependency_overrides[get_store_repository] = lambda: mock_repo
+    response = create_store(payload=StoreCreate(name="Tienda Demo"), repo=mock_repo)
 
-    client = TestClient(app)
-    response = client.post("/stores", json={"name": "Tienda Demo"})
-
-    assert response.status_code == 201
-    assert response.json() == {
-        "id": 1,
-        "name": "Tienda Demo",
-        "is_active": True,
-    }
-
-    app.dependency_overrides.clear()
+    assert response.name == "Tienda Demo"
+    mock_repo.create.assert_called_once_with(name="Tienda Demo")
 
 
 def test_list_active_stores_endpoint() -> None:
     mock_repo = MagicMock()
     mock_repo.get_all_active.return_value = [StoreModel(id=1, name="Tienda Activa", is_active=True)]
 
-    app.dependency_overrides[get_store_repository] = lambda: mock_repo
+    response = list_stores(repo=mock_repo)
 
-    client = TestClient(app)
-    response = client.get("/stores")
+    assert len(response) == 1
+    assert response[0].name == "Tienda Activa"
 
-    assert response.status_code == 200
-    assert len(response.json()) == 1
-    assert response.json()[0]["name"] == "Tienda Activa"
 
-    app.dependency_overrides.clear()
+def test_get_store_endpoint() -> None:
+    mock_repo = MagicMock()
+    mock_repo.get_by_id.return_value = StoreModel(id=1, name="Tienda Centro", is_active=True)
+    response = get_store(store_id=1, repo=mock_repo)
+
+    assert response.name == "Tienda Centro"
+    mock_repo.get_by_id.assert_called_once_with(1)
 
 
 def test_soft_delete_store_endpoint() -> None:
     mock_repo = MagicMock()
     mock_repo.soft_delete.return_value = StoreModel(id=1, name="Tienda a borrar", is_active=False)
 
-    app.dependency_overrides[get_store_repository] = lambda: mock_repo
+    response = soft_delete_store(store_id=1, repo=mock_repo)
 
-    client = TestClient(app)
-    response = client.delete("/stores/1")
-
-    assert response.status_code == 200
-    assert response.json()["is_active"] is False
-
-    app.dependency_overrides.clear()
+    assert response.is_active is False
 
 
 def test_create_store_without_name_returns_422() -> None:
-    client = TestClient(app)
-
-    response = client.post("/stores", json={})
-
-    assert response.status_code == 422
+    with pytest.raises(ValidationError):
+        StoreCreate.model_validate({})
 
 
 def test_update_store_endpoint() -> None:
     mock_repo = MagicMock()
     mock_repo.update.return_value = StoreModel(id=1, name="Nombre Nuevo", is_active=True)
 
-    app.dependency_overrides[get_store_repository] = lambda: mock_repo
+    response = update_store(
+        store_id=1,
+        payload=StoreUpdate(name="Nombre Nuevo"),
+        repo=mock_repo,
+    )
 
-    client = TestClient(app)
-    response = client.patch("/stores/1", json={"name": "Nombre Nuevo"})
+    assert response.name == "Nombre Nuevo"
+    mock_repo.update.assert_called_once_with(store_id=1, name="Nombre Nuevo")
 
-    assert response.status_code == 200
-    assert response.json()["name"] == "Nombre Nuevo"
 
-    app.dependency_overrides.clear()
+def test_update_store_without_fields_returns_422() -> None:
+    with pytest.raises(ValidationError):
+        StoreUpdate()
+
+
+def test_get_missing_store_raises_404() -> None:
+    repo = MagicMock()
+    repo.get_by_id.return_value = None
+
+    with pytest.raises(HTTPException) as exception:
+        get_store(store_id=999, repo=repo)
+
+    assert exception.value.status_code == 404

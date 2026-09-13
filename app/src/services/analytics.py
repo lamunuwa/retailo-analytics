@@ -1,14 +1,14 @@
 from collections.abc import Sequence
 
 from app.src.models.analytics import DetectionEvent
-from app.src.repos.analytics import AnalyticsRepository
+from app.src.repos.analytics import AnalyticsRepositoryProtocol
 from app.src.schemas.analytics import DetectionEventCreate, DetectionFilters
 
 
 class AnalyticsService:
     """Capa de lógica de negocio para analítica y detecciones."""
 
-    def __init__(self, repo: AnalyticsRepository) -> None:
+    def __init__(self, repo: AnalyticsRepositoryProtocol) -> None:
         self.repo = repo
 
     def register_detection(self, event_data: DetectionEventCreate) -> DetectionEvent:
