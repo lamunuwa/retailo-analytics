@@ -58,7 +58,11 @@ class ReportingRepository:
         stmt = (
             select(ZoneModel)
             .join(CameraModel, CameraModel.id == ZoneModel.camera_id)
-            .where(CameraModel.store_id == store_id)
+            .where(
+                CameraModel.store_id == store_id,
+                CameraModel.is_active.is_(True),
+                ZoneModel.is_active.is_(True),
+            )
             .order_by(ZoneModel.id)
         )
         return list(self.session.scalars(stmt).all())

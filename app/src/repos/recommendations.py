@@ -40,17 +40,17 @@ class RecommendationRepository:
 
     def create(self, store_id: int, insights: list[Insight]) -> list[RecommendationModel]:
         """Crea las recomendaciones que aun no existen"""
-        existing_stmt = select(RecommendationModel).where(
-            RecommendationModel.store_id == store_id,
-            RecommendationModel.status == "pending",
+        existing_stmt = (
+            select(RecommendationModel)
+            .where(RecommendationModel.store_id == store_id)
+            .order_by(RecommendationModel.created_at.desc(), RecommendationModel.id.desc())
         )
-        existing = {
-            (item.zone_id, item.insight_type): item
-            for item in self.session.scalars(existing_stmt).all()
-        }
+        existing: dict[tuple[int, str, str], RecommendationModel] = {}
+        for item in self.session.scalars(existing_stmt).all():
+            existing.setdefault((item.zone_id, item.insight_type, item.message), item)
         recommendations: list[RecommendationModel] = []
         for insight in insights:
-            key = (insight.zone_id, insight.type)
+            key = (insight.zone_id, insight.type, insight.message)
             recommendation = existing.get(key)
             if recommendation is None:
                 recommendation = RecommendationModel(

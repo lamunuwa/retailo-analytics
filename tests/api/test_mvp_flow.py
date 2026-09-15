@@ -155,11 +155,47 @@ def test_complete_mvp_flow(db: Session) -> None:
         db,
     )
     assert updated.status == "accepted"
+    regenerated = generate_recommendations(store_id, db, None, None)
+    assert regenerated[0].id == updated.id
+    assert regenerated[0].status == "accepted"
+    assert len(get_all_recommendations(store_id, db, None)) == 1
+
+    second_zone = create_zone(
+        camera_id,
+        ZoneCreate.model_validate(
+            {
+                "name": "Caja",
+                "zone_type": "checkout",
+                "points": [
+                    {"x": 110, "y": 0},
+                    {"x": 210, "y": 0},
+                    {"x": 210, "y": 100},
+                    {"x": 110, "y": 100},
+                ],
+            }
+        ),
+        ZoneRepository(db),
+    )
+    create_sales_record(
+        store_id,
+        SalesRecordCreate(
+            zone_id=second_zone.id,
+            category="Bebidas",
+            units_sold=1,
+            revenue=20,
+            recorded_at=now,
+        ),
+        SalesRepository(db),
+    )
+    changed_evidence = generate_recommendations(store_id, db, None, None)
+    assert changed_evidence[0].id != updated.id
+    assert changed_evidence[0].status == "pending"
+    assert len(get_all_recommendations(store_id, db, None)) == 3
 
 
 def test_zone_validation_update_and_delete(db: Session) -> None:
     """Valida la actualizacion y desactivacion de zonas"""
-    _, camera_id, zone_id = create_store_camera_zone(db)
+    store_id, camera_id, zone_id = create_store_camera_zone(db)
     with pytest.raises(ValidationError, match="area"):
         ZoneCreate.model_validate(
             {
@@ -178,6 +214,28 @@ def test_zone_validation_update_and_delete(db: Session) -> None:
     assert updated.name == "Fríos"
     assert delete_zone(zone_id, repo).is_active is False
     assert get_all_zones(camera_id, repo) == []
+    assert ReportingRepository(db).get_all_zones_by_store(store_id) == []
+
+    restored = create_zone(
+        camera_id,
+        ZoneCreate.model_validate(
+            {
+                "name": "Fríos",
+                "zone_type": "checkout",
+                "points": [
+                    {"x": 10, "y": 10},
+                    {"x": 90, "y": 10},
+                    {"x": 90, "y": 90},
+                    {"x": 10, "y": 90},
+                ],
+            }
+        ),
+        repo,
+    )
+    assert restored.id == zone_id
+    assert restored.is_active is True
+    assert restored.zone_type == "checkout"
+    assert get_all_zones(camera_id, repo) == [restored]
 
 
 def test_parent_and_cross_camera_integrity(db: Session) -> None:
