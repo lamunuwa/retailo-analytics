@@ -1,18 +1,47 @@
 from datetime import UTC, datetime
 
 from vision.src.api_client import APIClientError, RetailoAnalyticsClient
+from vision.src.api_contract import ZoneMetricContract, video_result_payload
 from vision.src.modules.session import VideoSession, run_detection
-from vision.src.modules.zones import get_configured_zones
+from vision.src.modules.zones import RoiZone, build_zones_from_api
 from vision.src.runtime import get_runtime_config
 
 
-def main() -> VideoSession:
-    """Inicia la detección, crea sesión en la API y reporta resultados."""
+def build_zone_metrics(
+    session: VideoSession,
+    zones: tuple[RoiZone, ...],
+) -> list[ZoneMetricContract]:
+    """Convierte metricas locales al contrato de API"""
 
-    zones = get_configured_zones()
+    total_visits = sum(session.visits_by_zone.values())
+    metrics: list[ZoneMetricContract] = []
+    for zone in zones:
+        if zone.zone_id is None:
+            raise ValueError(f"La zona '{zone.name}' no tiene ID de API")
+        visits = session.visits_by_zone.get(zone.name, 0)
+        metrics.append(
+            {
+                "zone_id": zone.zone_id,
+                "visits": visits,
+                "dwell_seconds": round(session.dwell_seconds_by_zone.get(zone.name, 0.0), 2),
+                "traffic_share": round(visits * 100 / total_visits, 2)
+                if total_visits
+                else 0.0,
+            }
+        )
+    return metrics
+
+
+def main() -> VideoSession:
+    """Ejecuta Vision y reporta sus resultados"""
+
     runtime_config = get_runtime_config()
 
-    api_client = RetailoAnalyticsClient(api_url=runtime_config.api_url)
+    api_client = RetailoAnalyticsClient(
+        api_url=runtime_config.api_url,
+        api_token=runtime_config.api_token,
+    )
+    zones = build_zones_from_api(api_client.get_zones(runtime_config.camera_id))
     started_at = datetime.now(UTC)
 
     try:
@@ -51,17 +80,33 @@ def main() -> VideoSession:
     print(f"Detecciones sin track: {session.untracked_detections}")
 
     for zone_name, count in session.visits_by_zone.items():
-        print(f"{zone_name}: {count}")
+        dwell = session.dwell_seconds_by_zone.get(zone_name, 0.0)
+        print(f"{zone_name}: {count} visitas, {dwell:.2f}s de permanencia")
 
     try:
-        api_client.update_session(
+        api_client.publish_video_result(
             session_id=session_id,
-            status="completed",
-            finished_at=session.finished_at,
+            payload=video_result_payload(
+                processed_frames=session.processed_frames,
+                elapsed_seconds=(session.finished_at - session.started_at).total_seconds(),
+                detected_people=session.detected_people,
+                started_at=session.started_at,
+                finished_at=session.finished_at,
+                zone_metrics=build_zone_metrics(session, zones),
+            ),
         )
-        print("\nSesión marcada como completed en API")
-    except APIClientError as e:
-        print(f"Error al actualizar sesión en API: {e}")
+        print("\nResultados publicados; sesión marcada como completed en API")
+    except (APIClientError, ValueError) as e:
+        print(f"Error al publicar resultados en API: {e}")
+        try:
+            api_client.update_session(
+                session_id=session_id,
+                status="failed",
+                finished_at=datetime.now(UTC),
+            )
+        except APIClientError as update_error:
+            print(f"Error al marcar sesión como failed en API: {update_error}")
+        raise
 
     return session
 
