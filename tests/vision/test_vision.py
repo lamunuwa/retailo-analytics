@@ -127,6 +127,7 @@ def test_main_runs_detection_and_prints_metrics(
         patch.object(vision_main, "run_detection", return_value=session_result),
         patch.object(vision_main, "RetailoAnalyticsClient") as client_class,
     ):
+        client_class.return_value.get_zones.return_value = ()
         client_class.return_value.create_session.return_value = 17
         result = vision_main.main()
 
@@ -136,11 +137,40 @@ def test_main_runs_detection_and_prints_metrics(
     assert "Personas rastreadas: 1" in output
     assert "entrada: 1" in output
     client_class.return_value.create_session.assert_called_once()
-    client_class.return_value.update_session.assert_called_once_with(
+    client_class.return_value.create_video_result.assert_called_once_with(
         session_id=17,
-        status="completed",
+        processed_frames=1,
+        elapsed_seconds=(session_result.finished_at - session_result.started_at).total_seconds(),
+        detected_people=2,
+        started_at=session_result.started_at,
         finished_at=session_result.finished_at,
+        zone_metrics=[],
     )
+    client_class.return_value.update_session.assert_not_called()
+
+
+def test_zone_metrics_use_api_ids_and_normalized_shares() -> None:
+    """Valida las metricas publicadas para las zonas de la API."""
+    video_session = session.VideoSession(
+        started_at=datetime.now(UTC),
+        finished_at=datetime.now(UTC),
+        processed_frames=5,
+        detected_people=3,
+        tracked_people=3,
+        untracked_detections=0,
+        visits_by_zone={"entrada": 1, "caja": 3},
+    )
+    api_zones = (
+        vision_main.CameraZone(id=7, name="entrada", points=((0, 0),) * 4),
+        vision_main.CameraZone(id=9, name="caja", points=((0, 0),) * 4),
+    )
+
+    metrics = vision_main._build_zone_metrics(video_session, api_zones)
+
+    assert metrics == [
+        {"zone_id": 7, "visits": 1, "dwell_seconds": 0.0, "traffic_share": 25.0},
+        {"zone_id": 9, "visits": 3, "dwell_seconds": 0.0, "traffic_share": 75.0},
+    ]
 
 
 # Detection ---------------------------------------------------
