@@ -1,55 +1,53 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class CameraBase(BaseModel):
-    """
-    Esquema base para las cámaras.
-    Contiene los atributos comunes que se usarán en todas las operaciones (Crear, Leer, Actualizar).
-    """
+    """Define los campos comunes de una camara"""
 
-    name: str = Field(..., description="Nombre descriptivo de la cámara")
+    name: str = Field(..., min_length=1, max_length=100, description="Nombre descriptivo")
     description: str | None = Field(
-        None, description="Descripción opcional de la ubicación o propósito"
+        None, max_length=255, description="Descripcion opcional de la ubicacion o proposito"
     )
-
-    # Literal restringe los valores permitidos estrictamente a estas tres opciones,
-    # actuando como un validador de seguridad automático a nivel de API para evitar tipos extraños.
     source_type: Literal["demo_video", "webcam", "rtsp"] = Field(
         ..., description="Tipo de fuente de video permitida en el sistema"
     )
-    is_active: bool = Field(default=True, description="Indica si la cámara está activa")
-    # la indica para procesar seciones.
+    is_active: bool = Field(default=True, description="Indica si la camara esta activa")
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
 
 class CameraCreate(CameraBase):
-    """
-    Esquema para la creación (POST) de una cámara.
-    """
-
-    pass
+    """Valida la creacion de una camara"""
 
 
 class CameraUpdate(BaseModel):
-    """
-    Esquema para la actualización (PATCH) de una cámara.
-    """
+    """Valida la actualizacion de una camara"""
 
-    name: str | None = Field(None, description="Nombre descriptivo de la cámara")
-    description: str | None = Field(None, description="Descripción opcional")
+    name: str | None = Field(None, min_length=1, max_length=100, description="Nombre descriptivo")
+    description: str | None = Field(None, max_length=255, description="Descripcion opcional")
     source_type: Literal["demo_video", "webcam", "rtsp"] | None = Field(
         None, description="Tipo de fuente de video"
     )
-    is_active: bool | None = Field(None, description="Indica si la cámara está activa")
+    is_active: bool | None = Field(None, description="Indica si la camara esta activa")
+
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    @model_validator(mode="after")
+    def require_at_least_one_field(self) -> "CameraUpdate":
+        """Valida que exista al menos un cambio"""
+        if not self.model_fields_set:
+            raise ValueError("Se debe proporcionar al menos un campo para actualizar")
+        return self
 
 
 class CameraRead(CameraBase):
-    """
-    Esquema de salida o lectura (GET/Response).
-    """
+    """Representa la respuesta de una camara"""
 
-    id: int = Field(..., description="ID único autogenerado en la base de datos")
-    store_id: int = Field(..., description="ID de la tienda (Store) a la que está vinculada")
-    created_at: datetime = Field(..., description="Fecha y hora de creación del registro en BD")
+    id: int = Field(..., description="ID unico autogenerado en la base de datos")
+    store_id: int = Field(..., description="ID de la tienda vinculada")
+    created_at: datetime = Field(..., description="Fecha y hora de creacion del registro")
+
+    model_config = ConfigDict(from_attributes=True)

@@ -1,17 +1,11 @@
-"""Add sessions table for video processing tracking.
-
-Revision ID: 20260909_0002
-Revises: 20260909_0001
-Create Date: 2026-09-09 01:00:00
-"""
+"""Agrega la tabla de sesiones"""
 
 from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
 
-# revision identifiers, used by Alembic.
 revision: str = "20260909_0002"
 down_revision: str | Sequence[str] | None = "20260909_0001"
 branch_labels: str | Sequence[str] | None = None
@@ -19,6 +13,7 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
+    """Crea la tabla de sesiones"""
     op.create_table(
         "sessions",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -35,6 +30,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    """Elimina la tabla de sesiones"""
     op.drop_index("ix_sessions_status", table_name="sessions")
     op.drop_index("ix_sessions_camera_id", table_name="sessions")
     op.drop_table("sessions")

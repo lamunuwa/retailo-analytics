@@ -31,7 +31,7 @@ def test_store_repository_lists_active_stores() -> None:
 
     repo = StoreRepository(session=mock_session)
 
-    stores = repo.get_all_active()
+    stores = repo.get_all()
 
     assert len(stores) == 1
     assert stores[0].name == "Tienda Activa"
@@ -55,7 +55,7 @@ def test_store_repository_soft_deletes_store() -> None:
 
     repo = StoreRepository(session=mock_session)
 
-    repo.soft_delete(store_id=1)
+    repo.delete(store_id=1)
 
     assert tienda_mock.is_active is False
     mock_session.commit.assert_called_once()

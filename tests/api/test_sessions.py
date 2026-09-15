@@ -8,15 +8,15 @@ from app.src.models.sessions import SessionModel
 from app.src.repos.sessions import SessionRepository
 from app.src.routers.sessions import (
     create_session,
+    get_all_sessions,
     get_session,
-    list_sessions,
     update_session,
 )
 from app.src.schemas.sessions import SessionCreate, SessionUpdate
 
 
 def test_create_session_endpoint() -> None:
-    """Verifica que el endpoint POST registre una sesión correctamente."""
+    """Valida la creacion de una sesion"""
     mock_repo = MagicMock()
     mock_repo.create.return_value = SessionModel(
         id=1,
@@ -38,7 +38,7 @@ def test_create_session_endpoint() -> None:
 
 
 def test_create_session_rejects_an_unknown_camera() -> None:
-    """Verifica que no se creen sesiones sin una cámara registrada."""
+    """Rechaza una sesion sin camara registrada"""
     mock_repo = MagicMock()
     mock_repo.create.return_value = None
 
@@ -46,11 +46,11 @@ def test_create_session_rejects_an_unknown_camera() -> None:
         create_session(camera_id=999, payload=SessionCreate(), repo=mock_repo)
 
     assert exception.value.status_code == 404
-    assert exception.value.detail == "Camera not found"
+    assert exception.value.detail == "Camara no encontrada"
 
 
 def test_get_session_by_id_endpoint() -> None:
-    """Verifica que el endpoint GET obtenga una sesión específica por su ID."""
+    """Valida la consulta de una sesion"""
     mock_repo = MagicMock()
     now = datetime.now(UTC)
     mock_repo.get_by_id.return_value = SessionModel(
@@ -69,18 +69,18 @@ def test_get_session_by_id_endpoint() -> None:
 
 
 def test_get_session_not_found_returns_404() -> None:
-    """Verifica que se devuelva un error 404 si la sesión no existe."""
+    """Rechaza la consulta de una sesion inexistente"""
     mock_repo = MagicMock()
     mock_repo.get_by_id.return_value = None
     with pytest.raises(HTTPException) as exception:
         get_session(session_id=999, repo=mock_repo)
 
     assert exception.value.status_code == 404
-    assert exception.value.detail == "Session not found"
+    assert exception.value.detail == "Sesion no encontrada"
 
 
 def test_update_session_endpoint() -> None:
-    """Verifica la actualización (PATCH) de una sesión existente."""
+    """Valida la actualizacion de una sesion"""
     mock_repo = MagicMock()
     now = datetime.now(UTC)
     mock_repo.get_by_id.return_value = SessionModel(
@@ -120,7 +120,7 @@ def test_update_session_endpoint() -> None:
 
 
 def test_update_session_not_found_returns_404() -> None:
-    """Verifica que se devuelva un error 404 si se intenta actualizar una sesión inexistente."""
+    """Rechaza la actualizacion de una sesion inexistente"""
     mock_repo = MagicMock()
     mock_repo.get_by_id.return_value = None
     with pytest.raises(HTTPException) as exception:
@@ -136,7 +136,7 @@ def test_update_session_not_found_returns_404() -> None:
 
 
 def test_update_session_rejects_a_finalized_session() -> None:
-    """Una sesión completada o fallida no puede regresar a otro estado."""
+    """Rechaza cambios sobre una sesion finalizada"""
     mock_repo = MagicMock()
     now = datetime.now(UTC)
     mock_repo.get_by_id.return_value = SessionModel(
@@ -160,7 +160,7 @@ def test_update_session_rejects_a_finalized_session() -> None:
 
 
 def test_update_session_rejects_a_finish_before_the_start() -> None:
-    """La marca de finalización no puede ser anterior al inicio."""
+    """Rechaza una fecha final anterior al inicio"""
     mock_repo = MagicMock()
     started_at = datetime(2026, 9, 9, 12, 0, tzinfo=UTC)
     mock_repo.get_by_id.return_value = SessionModel(
@@ -187,7 +187,7 @@ def test_update_session_rejects_a_finish_before_the_start() -> None:
 
 
 def test_list_sessions_by_camera() -> None:
-    """Verifica que el endpoint GET liste las sesiones de una cámara."""
+    """Valida la consulta de sesiones por camara"""
     mock_repo = MagicMock()
     now = datetime.now(UTC)
     mock_repo.get_all_by_camera.return_value = [
@@ -200,15 +200,15 @@ def test_list_sessions_by_camera() -> None:
             created_at=now,
         )
     ]
-    response = list_sessions(camera_id=5, repo=mock_repo)
+    response = get_all_sessions(camera_id=5, repo=mock_repo)
     assert len(response) == 1
     assert response[0].camera_id == 5
 
-    mock_repo.get_all_by_camera.assert_called_once_with(camera_id=5)
+    mock_repo.get_all_by_camera.assert_called_once_with(camera_id=5, limit=100, offset=0)
 
 
 def test_session_repository_does_not_create_for_an_unknown_camera() -> None:
-    """La validación de cámara se realiza antes de persistir la sesión."""
+    """Evita persistir una sesion sin camara"""
     mock_db = MagicMock()
     mock_db.get.return_value = None
     repo = SessionRepository(session=mock_db)

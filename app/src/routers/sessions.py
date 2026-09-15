@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.src.core.db import get_db
@@ -14,7 +14,7 @@ router = APIRouter(tags=["Sessions"])
 def get_session_repository(
     session: Annotated[Session, Depends(get_db)],
 ) -> SessionRepositoryProtocol:
-    """Inyecta la instancia del repositorio de sesiones."""
+    """Construye el repositorio de sesiones"""
     return SessionRepository(session=session)
 
 
@@ -28,13 +28,13 @@ def create_session(
     payload: SessionCreate,
     repo: Annotated[SessionRepositoryProtocol, Depends(get_session_repository)],
 ) -> SessionModel:
-    """Registra una nueva sesión de video para una cámara."""
+    """Crea una sesion para una camara"""
     session = repo.create(
         camera_id=camera_id,
         started_at=payload.started_at,
     )
     if session is None:
-        raise HTTPException(status_code=404, detail="Camera not found")
+        raise HTTPException(status_code=404, detail="Camara no encontrada")
     return session
 
 
@@ -43,10 +43,10 @@ def get_session(
     session_id: int,
     repo: Annotated[SessionRepositoryProtocol, Depends(get_session_repository)],
 ) -> SessionModel:
-    """Obtiene el estado de una sesión por su ID."""
+    """Obtiene una sesion por identificador"""
     session = repo.get_by_id(session_id=session_id)
     if session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Sesion no encontrada")
     return session
 
 
@@ -56,16 +56,16 @@ def update_session(
     payload: SessionUpdate,
     repo: Annotated[SessionRepositoryProtocol, Depends(get_session_repository)],
 ) -> SessionModel:
-    """Actualiza el estado de una sesión (típicamente al finalizar)."""
+    """Actualiza una sesion"""
     session = repo.get_by_id(session_id=session_id)
     if session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Sesion no encontrada")
     if session.status != "running":
-        raise HTTPException(status_code=409, detail="Session is already finalized")
+        raise HTTPException(status_code=409, detail="La sesion ya fue finalizada")
     if payload.finished_at < session.started_at:
         raise HTTPException(
             status_code=422,
-            detail="finished_at must be later than started_at",
+            detail="finished_at debe ser posterior a started_at",
         )
 
     updated_session = repo.update(
@@ -74,14 +74,16 @@ def update_session(
         finished_at=payload.finished_at,
     )
     if updated_session is None:
-        raise HTTPException(status_code=404, detail="Session not found")
+        raise HTTPException(status_code=404, detail="Sesion no encontrada")
     return updated_session
 
 
 @router.get("/cameras/{camera_id}/sessions", response_model=list[SessionRead])
-def list_sessions(
+def get_all_sessions(
     camera_id: int,
     repo: Annotated[SessionRepositoryProtocol, Depends(get_session_repository)],
+    limit: Annotated[int, Query(ge=1, le=1000)] = 100,
+    offset: Annotated[int, Query(ge=0)] = 0,
 ) -> list[SessionModel]:
-    """Obtiene el historial de sesiones de una cámara."""
-    return repo.get_all_by_camera(camera_id=camera_id)
+    """Obtiene las sesiones de una camara"""
+    return repo.get_all_by_camera(camera_id=camera_id, limit=limit, offset=offset)
