@@ -5,18 +5,22 @@ from sqlalchemy import engine_from_config, pool
 from alembic import context
 from app.src.core.db import Base, get_database_url
 from app.src.models import (
+    AuthSessionModel,
     CameraModel,
     DetectionEvent,
     RecommendationModel,
     SalesRecordModel,
     SessionModel,
     StoreModel,
+    UserModel,
     VideoResultModel,
     ZoneMetricModel,
     ZoneModel,
 )
 
 _models = (
+    UserModel,
+    AuthSessionModel,
     DetectionEvent,
     CameraModel,
     SessionModel,
