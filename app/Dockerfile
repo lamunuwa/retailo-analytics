@@ -17,4 +17,4 @@ USER appuser
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.src.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "alembic upgrade head && python -m app.src.seed_demo_user && exec uvicorn app.src.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

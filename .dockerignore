@@ -28,6 +28,12 @@ __pycache__/
 *.pyc
 *.py[cod]
 
+# Frontend
+node_modules/
+dist/
+npm-debug.log*
+
+
 # Herramientas de Pruebas y Linter
 .pytest_cache/
 .mypy_cache/
@@ -37,7 +43,9 @@ htmlcov/
 
 # Archivos no necesarios para construir imagenes
 .github/
-docs/
+docs/*
+!docs/images/
+!docs/images/*.svg
 tests/
 *.md
 
