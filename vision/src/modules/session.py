@@ -24,7 +24,7 @@ class VideoSession:
 def run_detection(
     device: str,
     zones: Sequence[RoiZone],
-    video_source: str | int,
+    video_path: str,
     model_path: str = "yolov8n.pt",
     confidence: float = 0.25,
     tracker_path: str = "vision/config/bytetrack.yaml",
@@ -63,7 +63,7 @@ def run_detection(
     tracked_people_last_seen: dict[int, float] = {}
     untracked_detections = 0
 
-    for frame in detector.detect_in_video(video_source):
+    for frame in detector.detect_in_video(video_path):
         observed_at = clock()
         expiration_time = observed_at - track_ttl_seconds
         tracked_people_last_seen = {

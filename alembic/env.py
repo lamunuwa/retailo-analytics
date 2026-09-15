@@ -6,10 +6,11 @@ from sqlalchemy import engine_from_config, pool
 from app.src.core.db import Base, get_database_url
 from app.src.models.analytics import DetectionEvent
 from app.src.models.cameras import CameraModel
+from app.src.models.sessions import SessionModel
 from app.src.models.stores import StoreModel
 
 # Alembic must import every model before it reads Base.metadata.
-_models = (DetectionEvent, CameraModel, StoreModel)
+_models = (DetectionEvent, CameraModel, SessionModel, StoreModel)
 
 config = context.config
 

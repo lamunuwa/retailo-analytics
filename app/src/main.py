@@ -7,6 +7,7 @@ from fastapi.responses import RedirectResponse
 from app.src.routers import cameras, stores
 from app.src.routers.analytics import router as analytics_router
 from app.src.routers.health import router as health_router
+from app.src.routers.sessions import router as sessions_router
 
 tags_metadata = [
     {
@@ -16,6 +17,10 @@ tags_metadata = [
     {
         "name": "Cameras",
         "description": "Administración de cámaras vinculadas a cada tienda.",
+    },
+    {
+        "name": "Sessions",
+        "description": "Rastreo del ciclo de vida de sesiones de procesamiento de video.",
     },
     {
         "name": "Analytics",
@@ -37,6 +42,7 @@ app = FastAPI(
 app.include_router(health_router)
 app.include_router(stores.router)
 app.include_router(cameras.router)
+app.include_router(sessions_router)
 app.include_router(analytics_router)
 
 

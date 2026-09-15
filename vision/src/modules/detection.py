@@ -56,12 +56,12 @@ class PersonDetector:
 
     def detect_in_video(
         self,
-        video_source: str | int,
+        video_path: str,
     ) -> Iterator[DetectionFrame]:
         """Procesa un video y devuelve cada frame con sus personas detectadas"""
 
         results = self.model.track(
-            source=video_source,
+            source=video_path,
             stream=True,
             persist=True,
             tracker=self.tracker_path,
