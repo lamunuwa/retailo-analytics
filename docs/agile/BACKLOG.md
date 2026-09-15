@@ -220,6 +220,110 @@ El orden de registro es ascendente. En la parte superior estará la US más actu
 
 ## Sprint 2
 
+### 15. Persistencia y seguimiento de recomendaciones
+
+**Prioridad:** Should Have (SH)
+
+**Dificultad:** 3 Story Points
+
+**As** operador de una tienda, **I want to** generar y clasificar recomendaciones derivadas de los insights, **So that** pueda dar seguimiento a las acciones aceptadas o rechazadas.
+
+```gherkin
+Scenario: Generar recomendaciones sin duplicar pendientes
+  Given una tienda con analíticas disponibles
+  When solicito POST /stores/{store_id}/recommendations/generate
+  Then se persiste una recomendación pendiente por zona e insight
+  And una segunda generación reutiliza las recomendaciones pendientes existentes
+
+Scenario: Actualizar el estado de una recomendación
+  Given una recomendación existente
+  When envío PATCH /recommendations/{recommendation_id}/status
+  Then su estado cambia a pending, accepted o rejected
+```
+
+### 14. Analítica por tienda e integración de ventas demo
+
+**Prioridad:** Must Have (MH)
+
+**Dificultad:** 5 Story Points
+
+**As** responsable de una tienda, **I want to** consultar tráfico, permanencia, ventas e insights por periodo, **So that** pueda identificar oportunidades operativas por zona.
+
+```gherkin
+Scenario: Consultar métricas agregadas por periodo
+  Given resultados de video y ventas agregadas por zona
+  When consulto summary, traffic o insights con start_date y end_date
+  Then recibo únicamente métricas del periodo solicitado
+  And los porcentajes se recalculan sobre los totales filtrados
+
+Scenario: Cargar ventas de demostración sin datos personales
+  Given una zona que pertenece a la tienda
+  When envío POST /stores/{store_id}/sales con unidades, ingreso y categoría
+  Then la venta agregada queda disponible para comparar traffic_share y sales_share
+```
+
+### 13. Publicación append-only de resultados de video
+
+**Prioridad:** Must Have (MH)
+
+**Dificultad:** 5 Story Points
+
+**As** agente local de Vision, **I want to** publicar una sola colección de métricas al terminar una sesión, **So that** la API conserve un resumen íntegro y pueda completar la sesión atómicamente.
+
+```gherkin
+Scenario: Publicar un resultado válido
+  Given una sesión running y métricas de zonas pertenecientes a su cámara
+  When envío POST /sessions/{session_id}/video-results
+  Then se guardan el resumen y sus métricas en una transacción
+  And la sesión cambia a completed
+
+Scenario: Proteger la integridad append-only
+  Given una sesión que ya tiene resultado
+  When intento publicar otro resultado
+  Then la API responde 409 Conflict sin modificar el resultado original
+```
+
+### 12. Gestión de zonas poligonales por cámara
+
+**Prioridad:** Must Have (MH)
+
+**Dificultad:** 5 Story Points
+
+**As** operador de RetaiLO, **I want to** crear, consultar, editar y desactivar zonas ROI, **So that** Vision procese exactamente la distribución configurada para cada cámara.
+
+```gherkin
+Scenario: Crear un polígono válido
+  Given una cámara activa y cuatro o más puntos distintos con área
+  When envío POST /cameras/{camera_id}/zones
+  Then la API guarda la zona y devuelve 201 Created
+
+Scenario: Rechazar zonas inválidas o duplicadas
+  Given puntos colineales o un nombre ya usado en la misma cámara
+  When intento crear o actualizar la zona
+  Then la API responde 422 o 409 sin guardar datos inválidos
+```
+
+### 11. Contrato desacoplado entre Vision y API
+
+**Prioridad:** Must Have (MH)
+
+**Dificultad:** 3 Story Points
+
+**As** desarrollador del agente local, **I want to** centralizar rutas y payloads del contrato HTTP, **So that** los cambios de API no queden hardcodeados dentro de la detección.
+
+```gherkin
+Scenario: Ejecutar el ciclo completo del agente
+  Given una cámara con zonas configuradas en la API
+  When Vision inicia una corrida
+  Then consulta las zonas, crea la sesión y procesa el video
+  And publica visitas, permanencia y proporción de tráfico por zone_id
+
+Scenario: Manejar una falla transitoria
+  Given un error temporal de red o servidor
+  When el agente realiza una petición
+  Then aplica reintentos acotados y reporta un error explícito si no se recupera
+```
+
 ### 10. Gestión de Sesiones de Video (Sessions CRUD)
 
 **Prioridad:** Must Have (MH)
