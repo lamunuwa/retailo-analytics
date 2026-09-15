@@ -6,22 +6,24 @@ from fastapi import HTTPException
 
 from app.src.models.analytics import DetectionEvent
 from app.src.repos.analytics import AnalyticsRepository
-from app.src.routers.analytics import get_detections
+from app.src.routers.analytics import _to_response, get_detections
 from app.src.schemas.analytics import DetectionEventCreate, DetectionFilters
 from app.src.services.analytics import AnalyticsService
 
 
 def make_event(camera_id: int = 1, zone_name: str = "Central") -> DetectionEvent:
+    """Crea un evento de deteccion para pruebas"""
     return DetectionEvent(
         id=1,
         camera_id=camera_id,
         zone_name=zone_name,
         people_count=4,
-        timestamp="2026-09-05T12:00:00Z",
+        timestamp=datetime(2026, 9, 5, 12, tzinfo=UTC),
     )
 
 
 def test_register_detection_service() -> None:
+    """Valida el registro de una deteccion"""
     repo = MagicMock()
     service = AnalyticsService(repo)
     payload = DetectionEventCreate(
@@ -39,6 +41,7 @@ def test_register_detection_service() -> None:
 
 
 def test_analytics_repository_applies_all_filters() -> None:
+    """Valida los filtros del repositorio de analitica"""
     db = MagicMock()
     query = db.query.return_value
     query.filter.return_value = query
@@ -65,6 +68,7 @@ def test_analytics_repository_applies_all_filters() -> None:
 
 
 def test_get_detections_router_passes_filters() -> None:
+    """Valida los filtros del endpoint de detecciones"""
     service = MagicMock()
     service.get_detections.return_value = [make_event()]
 
@@ -92,6 +96,7 @@ def test_get_detections_router_passes_filters() -> None:
 
 
 def test_get_detections_rejects_invalid_date_range() -> None:
+    """Rechaza un rango de fechas invalido"""
     service = MagicMock()
 
     with pytest.raises(HTTPException) as exception:
@@ -103,3 +108,11 @@ def test_get_detections_rejects_invalid_date_range() -> None:
 
     assert exception.value.status_code == 422
     service.get_detections.assert_not_called()
+
+
+def test_legacy_naive_timestamp_is_returned_as_utc() -> None:
+    """Normaliza una fecha sin zona horaria"""
+    event = make_event()
+    event.timestamp = datetime(2026, 9, 5, 12)
+
+    assert _to_response(event).timestamp.tzinfo is UTC
