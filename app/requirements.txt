@@ -1,5 +1,6 @@
-fastapi
+fastapi==0.115.12
 uvicorn[standard]
 sqlalchemy
 alembic
+httpx
 psycopg[binary]

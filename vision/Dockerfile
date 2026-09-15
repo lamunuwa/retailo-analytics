@@ -1,20 +1,20 @@
 FROM python:3.12-slim
 
-WORKDIR /vision
+WORKDIR /app
 
 RUN apt-get update \
     && apt-get install --no-install-recommends -y libglib2.0-0 libgl1 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY vision/requirements.txt ./requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+COPY vision/requirements.txt ./vision/requirements.txt
+RUN pip install --no-cache-dir -r vision/requirements.txt
 
-COPY vision/ .
+COPY vision/ ./vision/
 
 RUN adduser --disabled-password --gecos "" visionuser
 
-RUN chown -R visionuser:visionuser /vision
+RUN chown -R visionuser:visionuser /app
 
 USER visionuser
 
-CMD ["python", "-m", "src.main"]
+CMD ["python", "-m", "vision.src.main"]

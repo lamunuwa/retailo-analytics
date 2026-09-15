@@ -1,4 +1,4 @@
-name: CI
+name: API CI
 
 on:
   push:
@@ -6,10 +6,21 @@ on:
       - "main"
       - "dev"
       - "feature/**"
+      - fix/**
+    paths:
+      - "app/**"
+      - "tests/api/**"
+      - "pyproject.toml"
+      - ".github/workflows/api.yml"
   pull_request:
     branches:
       - "main"
       - "dev"
+    paths:
+      - "app/**"
+      - "tests/api/**"
+      - "pyproject.toml"
+      - ".github/workflows/api.yml"
 
 jobs:
   test:
@@ -25,13 +36,13 @@ jobs:
           python-version: "3.12"
 
       - name: Install API dependencies
-        run: pip install -r app/requirements.txt pytest pytest-cov httpx ruff mypy
+        run: pip install -r app/requirements.txt pytest pytest-cov ruff mypy
 
       - name: Run Ruff
-        run: ruff check app/src tests vision/src
+        run: ruff check app/src tests/api
 
       - name: Run Mypy
-        run: mypy app/src tests vision/src
+        run: mypy app/src tests/api
 
       - name: Run Pytest
-        run: pytest --cov=app --cov-fail-under=80
+        run: pytest -o addopts="" tests/api --cov=app/src --cov-fail-under=80
