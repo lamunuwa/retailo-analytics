@@ -30,11 +30,13 @@ services:
     healthCheckPath: /
     autoDeployTrigger: commit
     envVars:
-      - key: API_HOSTPORT
+      # Free Render web services cannot receive private-network traffic.
+      # Proxy through the API's public Render hostname instead.
+      - key: API_HOST
         fromService:
           type: web
           name: retailo-api
-          property: hostport
+          envVarKey: RENDER_EXTERNAL_HOSTNAME
 
 databases:
   - name: retailo-db
