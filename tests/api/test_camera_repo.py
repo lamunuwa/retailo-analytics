@@ -70,7 +70,7 @@ def test_camera_repository_soft_deletes_camera() -> None:
     mock_session.get.return_value = camera_mock
     repo = CameraRepository(session=mock_session)
 
-    deleted = repo.soft_delete(camera_id=1)
+    deleted = repo.delete(camera_id=1)
 
     assert camera_mock.is_active is False
     mock_session.commit.assert_called_once()

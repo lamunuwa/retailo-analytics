@@ -7,9 +7,9 @@ from fastapi import HTTPException
 from app.src.models.cameras import CameraModel
 from app.src.routers.cameras import (
     create_camera,
+    delete_camera,
+    get_all_cameras,
     get_camera,
-    list_cameras,
-    soft_delete_camera,
     update_camera,
 )
 from app.src.schemas.cameras import CameraCreate, CameraUpdate
@@ -58,7 +58,7 @@ def test_list_cameras_endpoint() -> None:
             created_at=datetime.now(UTC),
         )
     ]
-    response = list_cameras(store_id=5, repo=mock_repo)
+    response = get_all_cameras(store_id=5, repo=mock_repo)
     assert len(response) == 1
     assert response[0].name == "Cámara Pasillo"
 
@@ -90,7 +90,7 @@ def test_get_camera_not_found_returns_404() -> None:
         get_camera(camera_id=999, repo=mock_repo)
 
     assert exception.value.status_code == 404
-    assert exception.value.detail == "Camera not found"
+    assert exception.value.detail == "Camara no encontrada"
 
 
 def test_update_camera_endpoint() -> None:
@@ -124,7 +124,7 @@ def test_update_camera_endpoint() -> None:
 def test_soft_delete_camera_endpoint() -> None:
     """Verifica el borrado lógico (DELETE) cambiando el estado is_active a False."""
     mock_repo = MagicMock()
-    mock_repo.soft_delete.return_value = CameraModel(
+    mock_repo.delete.return_value = CameraModel(
         id=1,
         store_id=5,
         name="Cámara a borrar",
@@ -132,7 +132,7 @@ def test_soft_delete_camera_endpoint() -> None:
         is_active=False,
         created_at=datetime.now(UTC),
     )
-    response = soft_delete_camera(camera_id=1, repo=mock_repo)
+    response = delete_camera(camera_id=1, repo=mock_repo)
     assert response.is_active is False
 
-    mock_repo.soft_delete.assert_called_once_with(camera_id=1)
+    mock_repo.delete.assert_called_once_with(camera_id=1)

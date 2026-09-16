@@ -9,18 +9,18 @@ from app.src.models.sessions import SessionModel
 
 
 class SessionRepositoryProtocol(Protocol):
-    """Define el contrato de operaciones de persistencia para la entidad Session."""
+    """Define las operaciones de sesiones"""
 
     def create(
         self,
         camera_id: int,
         started_at: datetime,
     ) -> SessionModel | None:
-        """Registra una nueva sesión de video asociada a una cámara."""
+        """Crea una sesion para una camara"""
         ...
 
     def get_by_id(self, session_id: int) -> SessionModel | None:
-        """Busca y retorna una sesión por su identificador único."""
+        """Obtiene una sesion por identificador"""
         ...
 
     def update(
@@ -29,19 +29,24 @@ class SessionRepositoryProtocol(Protocol):
         status: str,
         finished_at: datetime,
     ) -> SessionModel | None:
-        """Actualiza de forma parcial los atributos de una sesión existente."""
+        """Actualiza una sesion"""
         ...
 
-    def get_all_by_camera(self, camera_id: int) -> list[SessionModel]:
-        """Obtiene todas las sesiones históricas de una cámara específica."""
+    def get_all_by_camera(
+        self,
+        camera_id: int,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[SessionModel]:
+        """Obtiene las sesiones de una camara"""
         ...
 
 
 class SessionRepository:
-    """Implementación concreta del repositorio de sesiones utilizando SQLAlchemy."""
+    """Gestiona la persistencia de sesiones"""
 
     def __init__(self, session: Session) -> None:
-        """Inicializa el repositorio con la sesión activa de base de datos."""
+        """Inicializa el repositorio con una sesion"""
         self.session = session
 
     def create(
@@ -49,7 +54,7 @@ class SessionRepository:
         camera_id: int,
         started_at: datetime,
     ) -> SessionModel | None:
-        """Crea, persiste y retorna una nueva sesión en la base de datos."""
+        """Crea una sesion para una camara"""
         camera = self.session.get(CameraModel, camera_id)
         if camera is None or not camera.is_active:
             return None
@@ -65,7 +70,7 @@ class SessionRepository:
         return new_session
 
     def get_by_id(self, session_id: int) -> SessionModel | None:
-        """Busca y retorna un registro de sesión por su clave primaria, o None si no existe."""
+        """Obtiene una sesion por identificador"""
         return self.session.get(SessionModel, session_id)
 
     def update(
@@ -74,10 +79,7 @@ class SessionRepository:
         status: str,
         finished_at: datetime,
     ) -> SessionModel | None:
-        """
-        Modifica de manera selectiva los campos provistos de una sesión
-        y persiste los cambios.
-        """
+        """Actualiza una sesion"""
         session = self.session.get(SessionModel, session_id)
         if session is None:
             return None
@@ -89,11 +91,18 @@ class SessionRepository:
         self.session.refresh(session)
         return session
 
-    def get_all_by_camera(self, camera_id: int) -> list[SessionModel]:
-        """Consulta las sesiones de una cámara, ordenadas por fecha."""
+    def get_all_by_camera(
+        self,
+        camera_id: int,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[SessionModel]:
+        """Obtiene las sesiones de una camara"""
         stmt = (
             select(SessionModel)
             .where(SessionModel.camera_id == camera_id)
             .order_by(SessionModel.started_at.desc())
+            .offset(offset)
+            .limit(limit)
         )
         return list(self.session.scalars(stmt).all())

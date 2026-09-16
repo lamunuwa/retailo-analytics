@@ -7,7 +7,7 @@ from app.src.core.db import Base
 
 
 class DetectionEvent(Base):
-    """Modelo SQLAlchemy para almacenar los eventos de detección analítica."""
+    """Representa un evento de deteccion"""
 
     __tablename__ = "detection_events"
 
@@ -15,5 +15,7 @@ class DetectionEvent(Base):
     camera_id: Mapped[int] = mapped_column(Integer, index=True)
     zone_name: Mapped[str] = mapped_column(String)
     people_count: Mapped[int] = mapped_column(Integer)
-    timestamp: Mapped[datetime] = mapped_column(DateTime)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(UTC)
+    )

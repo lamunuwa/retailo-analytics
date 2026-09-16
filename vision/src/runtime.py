@@ -19,10 +19,11 @@ class VisionRuntimeConfig:
     tracker_path: str
     camera_id: int
     api_url: str
+    api_token: str = ""
 
 
 def get_demo_video_path() -> str:
-    """Obtiene el video demo que se procesará localmente."""
+    """Obtiene la ruta del video demo"""
 
     configured_path = os.getenv("DEMO_VIDEO_PATH", "").strip()
 
@@ -73,6 +74,12 @@ def get_api_url() -> str:
     return DEFAULT_API_URL
 
 
+def get_api_token() -> str:
+    """Obtiene el token opcional de la API"""
+
+    return os.getenv("API_TOKEN", "").strip()
+
+
 def get_device() -> str:
     """Selecciona CUDA si existe, de lo contrario, usa CPU"""
 
@@ -86,14 +93,12 @@ def get_device() -> str:
 
 def get_runtime_config() -> VisionRuntimeConfig:
     """Obtiene la configuracion necesaria para ejecutar Vision"""
-
-    runtime_config = VisionRuntimeConfig(
+    return VisionRuntimeConfig(
         device=get_device(),
         video_path=get_demo_video_path(),
         model_path=get_model_path(),
         tracker_path=get_tracker_path(),
         camera_id=get_camera_id(),
         api_url=get_api_url(),
+        api_token=get_api_token(),
     )
-
-    return runtime_config
