@@ -14,7 +14,7 @@ router = APIRouter(tags=["Cameras"])
 def get_camera_repository(
     session: Annotated[Session, Depends(get_db)],
 ) -> CameraRepositoryProtocol:
-    """Inyecta la instancia del repositorio de cámaras."""
+    """Construye el repositorio de camaras"""
     return CameraRepository(session=session)
 
 
@@ -28,21 +28,24 @@ def create_camera(
     payload: CameraCreate,
     repo: Annotated[CameraRepositoryProtocol, Depends(get_camera_repository)],
 ) -> CameraModel:
-    """Registra una nueva cámara para una tienda."""
-    return repo.create(
+    """Crea una camara para una tienda"""
+    camera = repo.create(
         store_id=store_id,
         name=payload.name,
         source_type=payload.source_type,
         description=payload.description,
     )
+    if camera is None:
+        raise HTTPException(status_code=404, detail="Tienda no encontrada")
+    return camera
 
 
 @router.get("/stores/{store_id}/cameras", response_model=list[CameraRead])
-def list_cameras(
+def get_all_cameras(
     store_id: int,
     repo: Annotated[CameraRepositoryProtocol, Depends(get_camera_repository)],
 ) -> list[CameraModel]:
-    """Obtiene la lista de cámaras activas de una tienda."""
+    """Obtiene las camaras activas de una tienda"""
     return repo.get_all_by_store(store_id=store_id)
 
 
@@ -51,10 +54,10 @@ def get_camera(
     camera_id: int,
     repo: Annotated[CameraRepositoryProtocol, Depends(get_camera_repository)],
 ) -> CameraModel:
-    """Obtiene el detalle de una cámara por su ID."""
+    """Obtiene una camara por identificador"""
     camera = repo.get_by_id(camera_id=camera_id)
     if camera is None:
-        raise HTTPException(status_code=404, detail="Camera not found")
+        raise HTTPException(status_code=404, detail="Camara no encontrada")
     return camera
 
 
@@ -64,7 +67,7 @@ def update_camera(
     payload: CameraUpdate,
     repo: Annotated[CameraRepositoryProtocol, Depends(get_camera_repository)],
 ) -> CameraModel:
-    """Actualiza parcialmente los datos de una cámara."""
+    """Actualiza una camara"""
     camera = repo.update(
         camera_id=camera_id,
         name=payload.name,
@@ -73,17 +76,17 @@ def update_camera(
         is_active=payload.is_active,
     )
     if camera is None:
-        raise HTTPException(status_code=404, detail="Camera not found")
+        raise HTTPException(status_code=404, detail="Camara no encontrada")
     return camera
 
 
 @router.delete("/cameras/{camera_id}", response_model=CameraRead)
-def soft_delete_camera(
+def delete_camera(
     camera_id: int,
     repo: Annotated[CameraRepositoryProtocol, Depends(get_camera_repository)],
 ) -> CameraModel:
-    """Realiza un borrado lógico de la cámara (is_active=False)."""
-    camera = repo.soft_delete(camera_id=camera_id)
+    """Desactiva una camara"""
+    camera = repo.delete(camera_id=camera_id)
     if camera is None:
-        raise HTTPException(status_code=404, detail="Camera not found")
+        raise HTTPException(status_code=404, detail="Camara no encontrada")
     return camera

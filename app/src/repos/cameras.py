@@ -4,23 +4,24 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.src.models.cameras import CameraModel
+from app.src.models.stores import StoreModel
 
 
 class CameraRepositoryProtocol(Protocol):
-    """Define el contrato de operaciones de persistencia para la entidad Camera."""
+    """Define las operaciones de camaras"""
 
     def create(
         self, store_id: int, name: str, source_type: str, description: str | None = None
-    ) -> CameraModel:
-        """Registra una nueva cámara asociada a una tienda."""
+    ) -> CameraModel | None:
+        """Crea una camara para una tienda"""
         ...
 
     def get_all_by_store(self, store_id: int) -> list[CameraModel]:
-        """Obtiene todas las cámaras activas vinculadas a una tienda específica."""
+        """Obtiene las camaras activas de una tienda"""
         ...
 
     def get_by_id(self, camera_id: int) -> CameraModel | None:
-        """Busca y retorna una cámara por su identificador único."""
+        """Obtiene una camara por identificador"""
         ...
 
     def update(
@@ -31,23 +32,28 @@ class CameraRepositoryProtocol(Protocol):
         source_type: str | None = None,
         is_active: bool | None = None,
     ) -> CameraModel | None:
-        """Actualiza de forma parcial los atributos de una cámara existente."""
+        """Actualiza una camara"""
         ...
 
-    def soft_delete(self, camera_id: int) -> CameraModel | None: ...
+    def delete(self, camera_id: int) -> CameraModel | None:
+        """Desactiva una camara"""
+        ...
 
 
 class CameraRepository:
-    """Implementación concreta del repositorio de cámaras utilizando SQLAlchemy."""
+    """Gestiona la persistencia de camaras"""
 
     def __init__(self, session: Session) -> None:
-        """Inicializa el repositorio con la sesión activa de base de datos."""
+        """Inicializa el repositorio con una sesion"""
         self.session = session
 
     def create(
         self, store_id: int, name: str, source_type: str, description: str | None = None
-    ) -> CameraModel:
-        """Crea, persiste y retorna una nueva cámara en la base de datos."""
+    ) -> CameraModel | None:
+        """Crea una camara para una tienda"""
+        store = self.session.get(StoreModel, store_id)
+        if store is None or not store.is_active:
+            return None
         camera = CameraModel(
             store_id=store_id,
             name=name,
@@ -60,14 +66,14 @@ class CameraRepository:
         return camera
 
     def get_all_by_store(self, store_id: int) -> list[CameraModel]:
-        """Consulta y retorna un listado de cámaras activas filtradas por su tienda."""
+        """Obtiene las camaras activas de una tienda"""
         stmt = select(CameraModel).where(
             CameraModel.store_id == store_id, CameraModel.is_active.is_(True)
         )
         return list(self.session.scalars(stmt).all())
 
     def get_by_id(self, camera_id: int) -> CameraModel | None:
-        """Busca y retorna un registro de cámara por su clave primaria, o None si no existe."""
+        """Obtiene una camara por identificador"""
         return self.session.get(CameraModel, camera_id)
 
     def update(
@@ -78,10 +84,7 @@ class CameraRepository:
         source_type: str | None = None,
         is_active: bool | None = None,
     ) -> CameraModel | None:
-        """
-        Modifica de manera selectiva los campos
-        provistos de una cámara y persiste los cambios.
-        """
+        """Actualiza una camara"""
         camera = self.session.get(CameraModel, camera_id)
         if camera is None:
             return None
@@ -99,8 +102,8 @@ class CameraRepository:
         self.session.refresh(camera)
         return camera
 
-    def soft_delete(self, camera_id: int) -> CameraModel | None:
-        """Realiza un borrado lógico marcando is_active como False en la cámara."""
+    def delete(self, camera_id: int) -> CameraModel | None:
+        """Desactiva una camara"""
         camera = self.session.get(CameraModel, camera_id)
         if camera is None:
             return None

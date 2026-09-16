@@ -6,6 +6,7 @@ from app.src.routers.health import health_check
 
 
 def test_root_redirects_to_docs() -> None:
+    """Valida la redireccion a la documentacion"""
     response = root()
 
     assert response.status_code == 307
@@ -13,6 +14,7 @@ def test_root_redirects_to_docs() -> None:
 
 
 def test_health_check_reports_database_status() -> None:
+    """Valida el estado saludable de la API"""
     db = MagicMock()
     response = health_check(db=db)
     body = json.loads(bytes(response.body))
@@ -23,6 +25,7 @@ def test_health_check_reports_database_status() -> None:
 
 
 def test_health_check_reports_degraded_when_database_is_unavailable() -> None:
+    """Valida el estado degradado de la API"""
     db = MagicMock()
     db.execute.side_effect = RuntimeError("database unavailable")
     response = health_check(db=db)
@@ -34,7 +37,8 @@ def test_health_check_reports_degraded_when_database_is_unavailable() -> None:
 
 
 def test_openapi_lists_store_operations_in_requested_order() -> None:
+    """Valida el orden CRUD de tiendas"""
     schema = app.openapi()
 
-    assert list(schema["paths"]["/stores/"].keys()) == ["post", "get"]
+    assert list(schema["paths"]["/stores"].keys()) == ["post", "get"]
     assert list(schema["paths"]["/stores/{store_id}"].keys()) == ["get", "patch", "delete"]

@@ -8,25 +8,245 @@ El orden de registro es ascendente. En la parte superior estará el registro má
 
 ---
 
-## [2026-09-10] Auditoría de infraestructura para el cierre del Sprint 1
+## [2026-09-15] Correccion de Pytest unicamente para Vision
 
-**Quién:** @aleixscarbo | Aleixs Carbonell
+**Quien:** @LaMunuwa | Anna Valentina
 
-**Herramienta:** GitHub Copilot
+**Herramienta:** Codex
 
-**Qué se pidió:** Realizar una revisión de código (Peer Review) del PR #23 como auditoría de infraestructura para el cierre del Sprint 1. Se evaluó la resiliencia del Healthcheck, la inyección de dependencias y la configuración de PostgreSQL. El prompt utilizado fue:
-> "Actúa como un Staff Software Engineer especialista en Backend e Infraestructura. Realiza un Code Review profundo... Evalúa la resiliencia del sistema en producción, el Healthcheck, y el Connection Pool."
+**Que se pidio:** Corregir brevemente los test, era de urgencia por el tiempo:
 
-**Qué produjo la IA vs Qué detectó el Humano?:**
+> Pytest de vision pasa con menos del 80%, haz que suba a min 80%
 
-- **Hallazgos de la IA:** Detectó un antipatrón arquitectónico crítico: el `Engine` de SQLAlchemy se estaba instanciando por cada request, destruyendo el *Connection Pooling* y causando un alto overhead de conexiones TCP. También detectó la falta de un *statement_timeout* en el Healthcheck síncrono, lo que arriesgaba la saturación del threadpool de FastAPI.
-- **Hallazgo del Humano:** Actuando como Tech Lead, validé mediante pruebas locales que la actualización de dependencias (`FastAPI` y `httpx`) no rompió la lógica matemática (56/56 tests pasaron con 88% de cobertura). Intercepté el PR antes del merge a `main` para prevenir un colapso en producción bajo carga.
+**Que se genero / propuso:** Genero `test_api_client.py` que fue una excelente forma de solucionarlo, no prueba integracion ni comunicacion si no el mero cliente de vision.
 
-**Conclusiones Clave sobre la IA en Code Reviews:**
+**Que se acepto y que se rechazo, y por que:** N/A
 
-- El análisis estático de la IA es superior a las pruebas unitarias y de cobertura para detectar vulnerabilidades de infraestructura y ciclo de vida de conexiones. Un código con 100% de cobertura puede seguir siendo inseguro para producción si no respeta los patrones de concurrencia.
+**Validacion:** Es solo test, correr pytest.
 
-**Validación:** Se ejecutaron las pruebas locales después de actualizar las dependencias `FastAPI` y `httpx`. Los 56 tests pasaron y la cobertura quedó en 88%, confirmando que los cambios no rompieron la lógica existente. La auditoría de infraestructura permitió identificar riesgos de producción que no quedan cubiertos por la cobertura automatizada.
+## [2026-09-15] Gestion de recomendaciones
+
+**Quien:** @LaMunuwa | Anna Valentina
+
+**Herramienta:** Codex
+
+**Que se pidio:** Las recomendaciones aparecian de una forma terrible, aparecia un mensaje enorme de que habia una recomendacion y la recomendacion era un microtexto enanisimo abajo de eso, al usuario esto no le pareceria un buen sistema, incluso me perdi yo, entonces solicite lo siguiente:
+
+> Suelo dejar el prompt pero creo que aqui tiene mas valor explicar que pedi
+
+En este momento las recomendaciones se calculan en la API, segun la relacion entre los valores de deteccion y ventas.
+
+- Actividad alta + ventas bajas → oportunidad de mejora
+- Actividad alta + ventas altas → estrategia saludable
+- Actividad baja + ventas altas → oferta efectiva, pero con espacio para atraer más tráfico
+
+El bloque superior no mencionaba el hallazgo como tal, si no una notificacion enorme, despues del cambio muestra el hallazgo mas relevante para la sesion recien procesada. Para la demo podras ver: La zona Tienda concentra 51.91% de la actividad detectada y 3.23% de las unidades vendidas. O similares, asi evitamos informacion vaga.
+
+Tambien, no vi en que punto quitamos lo de aceptar y rechazar una recomendacion, entonces lo devolvimos junto con un historial.
+
+**Que se genero / propuso:** Solo cambiar de tamaño el texto importante y eliminar los demas, regresar el boton de aceptar/rechazar
+
+**Que se acepto y que se rechazo, y por que:** N/A
+
+**Validacion:** Verifique en dashboard, ya nada en terminal puesto que la API tiene mucho que funciona.
+
+## [2026-09-15] Conexion con la API de RetaiLO
+
+**Quien:** @LaMunuwa | Anna Valentina
+
+**Herramienta:** Codex
+
+**Que se pidio:** Una vez el front estaba casi en su etapa final le indique que empezaramos con la conexion API-FRONT. Use este prompt:
+
+> Bien, toca la parte mas pesada, conectar todo
+>
+> Recordemos que esto es una demo, por eso no tenemos muchas funciones en el front, sin embargo podemos presentar las justas y necesarias, POST de crear una tienda, POST de crear una camara, POST de crear una zona, luego ejecuto en local la corrida del video demo y guardo unas ventas en el endpoint de ventas para la demo y se muestran las metricas en el front, las conclusiones de la corrida como si fuera del dia de hoy. Con esa demo ya podria yo demostrar que mi aplicacion funciona.
+> En el cuadro grande superior del dashboard van las recomendaciones y un podemos calcular un porcentaje de conversion, numericas y para las graficas de barras las puedes sacar de los demas endpoints como session o results, las camaras activas pues es un get creo en el endpoint de las camaras, podriamos poner un boton de recarga lateral para evitar un websocket o streaming que es mucho peso y pues la sessiones se pueden guardar en el historial junto con los resultados. Por ahora eso es todo lo que muestra el frontend y es mas que suficiente para mostrar el funcionamiento de la aplicacion y entregar. Integra, si tienes dudas manda quest.
+
+**Que se genero / propuso:** Genero onboarding con los post de los 3 endpoint principales, STORES, CAMERAS y ZONES.
+
+Por demo los puntos del creador de zonas se adapto a 640x360px que es la cantidad de pixeles de el video demo que usare.
+
+Boton de recarga de datos evitando websockets, me menciono que no deberia meterme ahi ya que no tenemos una camara en vivo para estar manejando streaming.
+
+**Que se acepto y que se rechazo, y por que:** No recuerdo si aqui solicito aceptar algo, creo que solo codifico y ya, aunque no fue un error, tengo el ask for approval. A pesar de eso le tengo cargado en el AGENTS.md que siempre genere los test antes de codificar y hasta que pasen termina de sesion, tambien integre doble agente, uno para validar que el otro haga bien su trabajo.
+
+**Validacion:** Verifique en dashboard, ya nada en terminal puesto que la API tiene mucho que funciona.
+
+## [2026-09-15] Mejora la interfaz 1
+
+**Quien:** @LaMunuwa | Anna Valentina
+
+**Herramienta:** Codex
+
+**Que se pidio:** Multiples problemas de diseño, fueron multiples prompts, aun no funcionaba, use:
+
+> Necesito un fondo degradado, actualmente esta como bugeada y fijo. El codigo del screen esta en styles.css 34 en .auth-screen y app.jsx 72
+
+> Quita ver recomendacion y ajustes "basado en actividad agregada..." con el texto superior, osea que esten en la misma "indentacion" y en el menu de clickear, ese sombreado horrible que sale
+
+> Cuando cambio entre zonas del dashboard no cambia esa barra amarilla de lugar, haz que haga la animacion
+
+Son entradas muy sencillas, solo solucionaba los problemas en cuestion de segundos.
+
+## [2026-09-15] Login funcional
+
+**Quien:** @LaMunuwa | Anna Valentina
+
+**Herramienta:** Codex
+
+**Que se pidio:** En Figma le entrege la interfaz de un login pero no servia obivamente, la verdad es que lo hice por que TODOS literalmente TODOS en el hack tenian un auth y pues crei que era ya tipo como el holamundo de cualquier aplicacion, entonces aproveche para ver como lo haci y encontrar la logica dentro, por suerte es parte de la API, y fue muy facil leerlo. Este fue el prompt:
+
+> Perfecto, ya deje el frontend con el diseño que quiero, quizas algun breve ajuste pero iria al final.
+> Por ahora quiero ir por pasos, como tenemos una base de datos y no una supabase o un mongoDB hay que configurar, empecemos por el login, que funcione, quiero poder configurar una nueva cuenta y cambiarle la contraseña, no le pongas un filtro de seguridad mas alla de algo super sencillo, tipo por sesiones, no quiero nada de mandar correos o cosas mas complicadas ni conectar con cuentas como google, github, etc. luego generaras una cuenta que es la que usaremos para el desarrollo, me la daras y veremos que todo funcione correctamente, despues de que hagamos esto tocara conectar la API. Por ahora solo vas con el login.
+
+**Que se genero / propuso:** Genero muchos archivos dentro de `app/`, por capa practicamente y en front el archivo `authAPI.js`.
+
+**Que se acepto y que se rechazo, y por que:** No tenia mucha idea de que se debia hacer, sin embargo me puse a comparar mi apliacion GalenIA y multiples otros codigos publicos como C.H.O.R.I, BanVision, y asi para ver que estaba haciendo, esto fue conforme fue creando el codigo, pero parece que un auth es algo bastante sencillo para GPT Sol en UltraHigh y funciono a la primera.
+
+**Validacion:** Verifique 5 eventos manualmente:
+
+- No poner nada
+- Poner una contraseña incorrecta
+- Cambiar mi contraseña
+- Crear una cuenta sin nada
+- Cerrar sesion
+
+Todo funciono, igual chatGPT lo habia hecho antes.
+
+## [2026-09-15] Comienzo del frontend
+
+**Quien:** @LaMunuwa | Anna Valentina
+
+**Herramienta:** Codex
+
+**Que se pidio:** Despues de mi viaje al HackMTY aprendi muchisimo acerca de frontend, machine learning, APIs, websockets entre otras ramas de programacion. Lo cual me hizo querer conectar mi aplicacion con un front bonito y funcional para la demo, incluso me llamo a posiblemente seguir este proyecto a una Statup o alguno similar. Entrando en tema, solicite esto a GPT:
+
+> Crea una carpeta `frontend/` independiente con React y Vite. Dentro incluye lo siguiete:
+>
+> - App.jsx y main.jsx: para coordinar el global
+> - styles.css: para el diseño
+> - Dockerfile
+>
+> Aprovecha para crear el index, y editar el compose para desplegar lo que hagamos acontinuacion ya en local desde un container.
+>
+> Ahora si, crearemos una interfaz como la cargada en `data/`, cargue el .FIG y el .png para que revises los 2, tiens ahi las 3 interfaces, no son fijas pero vamos cambiando conforme me vaya gustando. Nuestra identidad se basara en los siguientes colores:
+>
+> - #FFD152
+> - #FFF9E7
+> - #909CC2
+>
+> Tambien integre los logos en .svg en `docs/images/` tienes el iso y el logo. Haz un buen trabajo con ellos que me costaron jajaja
+
+**Que se genero / propuso:** Una carpeta `frontend/` con esta estructura:
+
+```plaintext
+frontend/
+├── src/
+│   ├── App.jsx
+│   ├── main.jsx
+│   └── styles.css
+├── Dockerfile
+├── nginx.conf
+├── package.json
+├── vite.contig.js
+└── index.html
+```
+
+**Que se acepto y que se rechazo, y por que:** Realmente no se mucho de leer codigo de front, los compañeros en MTY me dijeron que practicamente van arreglando conforme termina la IA, es decir, compilan, entral al localhost y van solucionando con F12 y buscandolo en el archivo. Eso hice
+
+**Validacion:** No habia mucho que verificar aun, solo entre al local, vi que corriera el docker y que no moviera NADA mas que el front
+
+---
+
+## [2026-09-15] Cierre funcional de endpoints del MVP
+
+**Quien:** @LaMunuwa | Anna Valentina
+
+**Herramienta:** Codex
+
+**Que se pidio:** Necesitaba completar en una sola rama las historias pendientes del Sprint 2 y mantener la separacion por capas. Use el siguiente prompt:
+
+> Toma `docs/agile/BACKLOG.md` como fuente funcional y revisa la arquitectura actual de FastAPI antes de implementar. Completa los modulos faltantes de zonas, resultados de video, ventas demo, reportes analiticos y recomendaciones con modelos SQLAlchemy, esquemas Pydantic, repositorios, servicios cuando exista logica de negocio y routers. Conserva sesiones como ciclo de vida de procesamiento y resultados como inmutable por sesion. Valida relaciones entre tienda, camara, sesion y zona, evita datos personales y agrega migraciones Alembic reversibles. Escribe pruebas de flujo y de errores sin forzar una copia literal de los endpoints propuestos en el backlog. Al terminar ejecuta pruebas, cobertura, Ruff y Mypy.
+
+**Que se genero / propuso:** Implemente las entidades y endpoints restantes, agregue las migraciones `20260915_0003` y `20260915_0004`, conecte resultados con sesiones y genere analitica por zona a partir de trafico, permanencia y ventas agregadas. Tambien agregue recomendaciones persistentes con estados operativos y pruebas integrales del flujo de tienda a recomendacion.
+
+**Que se acepto y que se rechazo, y por que:** Acepte separar reportes en un servicio porque concentra calculos y mantiene los routers delgados. No replique de forma literal todas las rutas sugeridas en el backlog; mantuve recursos anidados donde la relacion de dominio era necesaria y evite endpoints redundantes.
+
+**Validacion:** Verifique migraciones, integridad relacional, casos de recurso inexistente, duplicados y rangos temporales. La suite combinada aprobo 74 pruebas y supero el objetivo de cobertura solicitado.
+
+## [2026-09-15] Extraccion del contrato entre Vision y la API
+
+**Quien:** @LaMunuwa | Anna Valentina
+
+**Herramienta:** Codex
+
+**Que se pidio:** Quise sacar el contrato HTTP que estaba mezclado con la ejecucion de Vision y comprobar el flujo completo sin depender de Docker durante el desarrollo. Use el siguiente prompt:
+
+> Inspecciona `vision/src` y localiza rutas, payloads y formas de respuesta de la API que esten metidas en la logica de deteccion. Extrae ese contrato a `vision/src/api_contract.py` dividiendo  para zonas, sesiones, metricas y resultados. Haz que `main.py` obtenga zonas desde la API, cree la sesion antes de procesar el video, mande un unico resultado y marque la sesion como fallida si el procesamiento o la publicacion no terminan correctamente. Agrega pruebas del contrato y del cliente sin realizar llamadas reales.
+
+**Que se genero / propuso:** Cree el contrato tipado y el cliente `RetailoAnalyticsClient`, retire rutas y payloads de la orquestacion principal y conecte las zonas con los poligonos ROI de OpenCV.
+
+**Que se acepto y que se rechazo, y por que:** Acepte centralizar el contrato y los errores de red porque reduce el acoplamiento entre deteccion y transporte. Rechace reintentar escrituras de forma automatica mientras no exista idempotencia explicita.
+
+**Validacion:** Cubri la construccion de rutas y payloads, el flujo GET-POST-PATCH y los errores de red o contrato con pruebas simuladas. Tambien confirme que el cliente no imprime ni incorpora el token en sus errores.
+
+## [2026-09-10] Comunicacion API-YOLO por medio de SESSIONS
+
+**Quién:** @LaMunuwa | Anna Valentina
+
+**Herramienta:** ChatGPT
+
+**Qué se pidió:** Tuve un par de muchos problemas para hacer que esto funcionara; específicamente, tuve problemas con los dockers, con internal server error y, cuando ya se dignó a funcionar con el contrato de la API, no se comunicaba ni en local. Aparte de que empecé a hacer los típicos parches de arreglar código con más código y le pedí a Sol que me apoyara, usé el siguiente prompt:
+
+> Acabo de generar un modulo completo de la API, SESSIONS. Puedes ver un poco de informacion dentro de `BACKLOG.md`, estos endpoints son los que comunican la API con la vision artificial de nuestro proyecto, deberian comportarse algo asi: uno guarda el puro estado de como esta corriendo la vision (sessions), el otro guarda los settings en general de la session (results) y el otro guarda los datos que le importan al cliente (analytics), esas son sus responsabilidades y por eso existen.
+>
+> Ahora mismo genere la migracion, tests y demas. Quiero que valides esto:
+>
+> - Primero vas a entrar al .venv para ejecutar ruff, mypy, pytest. Si fallan arreglalos. Intenta no modificar la logica de programacion, exceptuando pytest, ahi la idea es que los test obligan al codigo a cumplirlos no al revez (solo te permito modificar los tests si son tests que con este nuevo endpoint quedaron obsoletos)
+> - Luego vas a validar la logica, dime si teoricamente debe funcionar, este nuevo endpoint DEBE adecuarse a lo que hay no lo que hay a el, eso es OBLIGATORIO
+> - La idea de vision obviamente es que funcione en la camara, sin embargo para fines practicos del proyecto usamos videos cargados en `vision/data/demo`, si encuentras algo en vision referente a reproducirse en camara eliminalo, es innecesario
+
+**Qué se generó / propuso:** Generó 3 cambios importantes:
+
+- Al parecer, mi lógica de visión también incluía código muerto que quería ejecutar la cámara, entonces lo elimino.
+- Corrigió Alembic.
+- Corrigió la forma en la que comunicó la API (No me gustó del todo la forma, porque no termino de entender qué hizo).
+
+**Qué se aceptó y qué se rechazó, y por qué:** Acepté todo en general, solo hubo una breve cosa: mi ChatGPT tiene cargado en su AGENTS.md que cada que necesite validar algo de dockers, lo simule y saque los logs. Aquí el problema fue que no prendían los dockers y quería mover algo dentro del .env (archivo ignorado en repo), cosa que no iba, no había forma de que eso arreglara el problema y lo decliné.
+
+**Validación:** Pytest, Ruff y Mypy aprobaron satisfactoriamente todas las reglas de cobertura y validación de tipos. ChatGPT mencionó que Docker estaba corriendo y lo probé, abrí el Swagger, creé una tienda, una cámara y la pasé al local de visión con `API_BASE_URL=http://localhost:8000 / CAMERA_ID=1 / DEMO_VIDEO_PATH=vision/data/demo/supermarket.mp4 / python -m vision.src.main`, después traje con GET las sesiones de la cámara creada y apareció la sesión correctamente, en proceso y finalizada.
+
+## [2026-09-09] Planteamiento del endpoint SESSION
+
+**Quién:** @LaMunuwa | Anna Valentina
+
+**Herramienta:** Github Copilot
+
+**Qué se pidió:** Durante el Sprint 1, funcioné como desarrolladora de la parte de YOLO y OpenCV; no entré en nada de la API más allá de revisiones básicas. Ahora necesitaba un breve roadmap más claro del que tenía para ejecutar un endpoint que conecte YOLO con nuestra API. Use este prompt:
+
+> Desde el inicio del proyecto habiamos planteado un backlog con todo lo que deberiamos tener para entregar el proyecto 100% funcional, yo tengo que retirarme un par de dias dado que tengo otra competencia. Mi parte siempre fue la vision artificial pero ahi ya ayude bastante, en este momento quiero apoyarles con la API.
+>
+> Revisa `BACKLOG.md`, ahi tendras toda la informacion de que debemos hacer en los diferentes modulos de RetaiLO Analytics.
+>
+> Ahora mismo un partner esta desarrollando zones. Por lo que queda:
+>
+> - Sessions
+> - Results
+> - Analytics
+> Todo esto tiene que ver con la coneccion vision con API, apoyare por ese lado.
+>
+> Despues de entender este contexto revisa: `app/src` y `vision/src`, revisa todos los modulos y capas que hay. Despues me diras que tengo que hacer para generar SESSIONS. La informacion de que hace esta en backlog, pero en general cuando yo prendo la parte de vision se autogenera un POST de que inicio la session con algunos campos.
+
+Despues de este prompt me dio lo solicitado pero antes de ejecutar le pregunte como veia mejor el dividir responsabilidades con este prompt:
+
+> Tambien, tanto los endpoint de sessions, results y analytics son como que van muy de la mano. Crees que es buena idea mantenerlos los 3 o mejor hacemos solo 2 o hacemos un frankstain de los 3. Dame tu opinion. Segun yo uno guarda el puro estado de como esta corriendo la vision, el otro guarda los settings en general de la session y el otro guarda los datos que le importan al cliente, esas son sus responsabilidades y por eso existen, pero que opinas tu...
+
+**Qué se generó / propuso:** Genero el roadmap para lograr que "funcionara a la primera" el endpoint de SESSIONS junto con la comunicación API-YOLO; el contrato ya lo tenía anotado porque fue de lo primero que comenté con ChatGPT antes de siquiera empezar la semana 7.
+
+**Qué se aceptó y qué se rechazó, y por qué:** En este tipo de solicitudes de planificación y/o estructuración de ideas no suelo rechazar muchas cosas, dado que directamente no aparecen los botones de rechazar, por lo que la única modificación que se hizo fue el segundo prompt.
+
+**Validación:** N/A
 
 ## [2026-09-09] Correcciones finales del sprint 1
 

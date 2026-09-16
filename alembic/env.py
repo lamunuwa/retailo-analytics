@@ -1,15 +1,36 @@
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from alembic import context
 from app.src.core.db import Base, get_database_url
-from app.src.models.analytics import DetectionEvent
-from app.src.models.cameras import CameraModel
-from app.src.models.stores import StoreModel
+from app.src.models import (
+    AuthSessionModel,
+    CameraModel,
+    DetectionEvent,
+    RecommendationModel,
+    SalesRecordModel,
+    SessionModel,
+    StoreModel,
+    UserModel,
+    VideoResultModel,
+    ZoneMetricModel,
+    ZoneModel,
+)
 
-# Alembic must import every model before it reads Base.metadata.
-_models = (DetectionEvent, CameraModel, StoreModel)
+_models = (
+    UserModel,
+    AuthSessionModel,
+    DetectionEvent,
+    CameraModel,
+    SessionModel,
+    StoreModel,
+    ZoneModel,
+    VideoResultModel,
+    ZoneMetricModel,
+    SalesRecordModel,
+    RecommendationModel,
+)
 
 config = context.config
 
@@ -21,7 +42,7 @@ target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
-    """Generate SQL without opening a database connection."""
+    """Genera migraciones sin conexion"""
     context.configure(
         url=config.get_main_option("sqlalchemy.url"),
         target_metadata=target_metadata,
@@ -35,7 +56,7 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    """Apply migrations using a short-lived Alembic connection."""
+    """Ejecuta migraciones con una conexion temporal"""
     connectable = engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",

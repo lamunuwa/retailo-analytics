@@ -1,0 +1,50 @@
+services:
+  - type: web
+    name: retailo-api
+    runtime: docker
+    plan: free
+    region: ohio
+    dockerContext: .
+    dockerfilePath: ./app/Dockerfile
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: retailo-db
+          property: connectionString
+      - key: AUTH_SESSION_DAYS
+        value: "7"
+      - key: SEED_DEMO_USER
+        value: "false"
+
+  - type: web
+    name: retailo-web
+    runtime: docker
+    plan: free
+    region: ohio
+    dockerContext: .
+    dockerfilePath: ./frontend/Dockerfile
+    healthCheckPath: /
+    autoDeployTrigger: commit
+    envVars:
+      # Free Render web services cannot receive private-network traffic.
+      # Proxy through the API's public Render hostname instead.
+      - key: API_HOST
+        fromService:
+          type: web
+          name: retailo-api
+          envVarKey: RENDER_EXTERNAL_HOSTNAME
+      - key: API_SCHEME
+        value: https
+
+databases:
+  - name: retailo-db
+    plan: free
+    region: ohio
+    postgresMajorVersion: "16"
+    databaseName: retailo
+    user: retailo
+    ipAllowList: []

@@ -35,7 +35,13 @@ __pycache__/
 .coverage
 htmlcov/
 
+# Frontend React
+node_modules/
+dist/
+
 # IDEs y SO
 .vscode/
 .idea/
 .DS_Store
+.agents
+.codex
