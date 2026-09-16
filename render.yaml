@@ -37,6 +37,8 @@ services:
           type: web
           name: retailo-api
           envVarKey: RENDER_EXTERNAL_HOSTNAME
+      - key: API_SCHEME
+        value: https
 
 databases:
   - name: retailo-db

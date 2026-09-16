@@ -11,7 +11,7 @@ RUN npm run build
 
 FROM nginx:1.27-alpine
 
-ENV NGINX_ENVSUBST_FILTER="^(PORT|API_HOST)$"
+ENV NGINX_ENVSUBST_FILTER="^(PORT|API_SCHEME|API_HOST)$"
 
 COPY frontend/nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=build /workspace/frontend/dist /usr/share/nginx/html
