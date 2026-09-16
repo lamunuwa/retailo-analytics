@@ -8,6 +8,22 @@ El orden de registro es ascendente. En la parte superior estará el registro má
 
 ---
 
+## [2026-09-15] Correccion de Pytest unicamente para Vision
+
+**Quien:** @LaMunuwa | Anna Valentina
+
+**Herramienta:** Codex
+
+**Que se pidio:** Corregir brevemente los test, era de urgencia por el tiempo:
+
+> Pytest de vision pasa con menos del 80%, haz que suba a min 80%
+
+**Que se genero / propuso:** Genero `test_api_client.py` que fue una excelente forma de solucionarlo, no prueba integracion ni comunicacion si no el mero cliente de vision.
+
+**Que se acepto y que se rechazo, y por que:** N/A
+
+**Validacion:** Es solo test, correr pytest.
+
 ## [2026-09-15] Gestion de recomendaciones
 
 **Quien:** @LaMunuwa | Anna Valentina
