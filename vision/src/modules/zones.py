@@ -4,10 +4,10 @@ from dataclasses import dataclass
 import cv2
 import numpy as np
 
-from vision.src.api_contract import ZoneContract
-
 Point = tuple[int, int]
 
+# Configuracion temporal hasta recibir las zonas desde la API.
+# Cada clave identifica una zona y cada tupla contiene puntos (x, y).
 DEFAULT_ZONE_COORDINATES: dict[str, tuple[Point, ...]] = {
     "entrada": ((4, 6), (1909, 6), (1909, 1080), (6, 1080)),
 }
@@ -19,17 +19,22 @@ class RoiZone:
 
     name: str
     points: tuple[Point, ...]
-    zone_id: int | None = None
 
     @property
     def contour(self) -> np.ndarray:
         """Convierte los puntos al formato requerido por OpenCV"""
-        return np.array(self.points, dtype=np.int32)
+
+        contour = np.array(self.points, dtype=np.int32)
+        return contour
 
     def contains(self, point: tuple[float, float]) -> bool:
         """Indica si un punto pertenece a la zona, incluidos sus bordes"""
 
-        return cv2.pointPolygonTest(self.contour, point, False) >= 0
+        is_inside = cv2.pointPolygonTest(self.contour, point, False) >= 0
+        return is_inside
+
+
+# Funciones de apoyo ---------------------------------------
 
 
 def validate_zone_points(
@@ -66,17 +71,9 @@ def build_zones(
 
 def get_configured_zones() -> tuple[RoiZone, ...]:
     """Obtiene las zonas configuradas para la deteccion"""
-    return build_zones(DEFAULT_ZONE_COORDINATES)
+
+    zones = build_zones(DEFAULT_ZONE_COORDINATES)
+    return zones
 
 
-def build_zones_from_api(zones: Sequence[ZoneContract]) -> tuple[RoiZone, ...]:
-    """Convierte zonas de la API al formato de OpenCV"""
-
-    if not zones:
-        raise ValueError("La camara no tiene zonas activas configuradas en la API")
-    output: list[RoiZone] = []
-    for zone in zones:
-        points = tuple((point["x"], point["y"]) for point in zone["points"])
-        validate_zone_points(zone["name"], points)
-        output.append(RoiZone(name=zone["name"], points=points, zone_id=zone["id"]))
-    return tuple(output)
+# ----------------------------------------------------------

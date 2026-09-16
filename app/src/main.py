@@ -4,12 +4,16 @@ from fastapi import FastAPI
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import RedirectResponse
 
-from app.src.routers import cameras, recommendations, reporting, results, sales, stores, zones
+from app.src.routers import auth, cameras, recommendations, reporting, results, sales, stores, zones
 from app.src.routers.analytics import router as analytics_router
 from app.src.routers.health import router as health_router
 from app.src.routers.sessions import router as sessions_router
 
 tags_metadata = [
+    {
+        "name": "Auth",
+        "description": "Registro inicio de sesion y cambio de contrasena",
+    },
     {
         "name": "Stores",
         "description": "Registro consulta actualizacion y desactivacion de tiendas",
@@ -56,6 +60,7 @@ app = FastAPI(
 )
 
 app.include_router(health_router)
+app.include_router(auth.router)
 app.include_router(stores.router)
 app.include_router(cameras.router)
 app.include_router(sessions_router)

@@ -32,10 +32,20 @@ def create_zone(
     camera = repo.get_camera_by_id(camera_id)
     if camera is None or not camera.is_active:
         raise HTTPException(status_code=404, detail="Camara no encontrada")
-    if repo.get_by_name(camera_id, payload.name) is not None:
+    existing_zone = repo.get_by_name(camera_id, payload.name)
+    if existing_zone is not None and existing_zone.is_active:
         raise HTTPException(
             status_code=409,
             detail="El nombre de la zona ya existe para esta camara",
+        )
+    if existing_zone is not None:
+        return repo.update(
+            existing_zone,
+            {
+                "zone_type": payload.zone_type,
+                "points": [point.model_dump() for point in payload.points],
+                "is_active": True,
+            },
         )
     return repo.create(
         camera_id=camera_id,

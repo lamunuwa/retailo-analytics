@@ -20,8 +20,6 @@
 *.onnx
 *.mp4
 *.avi
-!yolov8n.pt
-!vision/data/demo/supermarket.mp4
 
 # Entorno Virtual y Caché de Python
 .venv/
@@ -29,6 +27,12 @@ venv/
 __pycache__/
 *.pyc
 *.py[cod]
+
+# Frontend
+node_modules/
+dist/
+npm-debug.log*
+
 
 # Herramientas de Pruebas y Linter
 .pytest_cache/
@@ -39,7 +43,9 @@ htmlcov/
 
 # Archivos no necesarios para construir imagenes
 .github/
-docs/
+docs/*
+!docs/images/
+!docs/images/*.svg
 tests/
 *.md
 
