@@ -1,34 +1,37 @@
 <p align="center">
-  <img src="docs/images/RetailOLogo.png" alt="RetaiLO Analytics" width="560">
+  <img src="docs/images/logocentrado.svg" alt="RetaiLO Analytics" width="1200">
 </p>
 
 <p align="center">
   <strong>Analítica visual para convertir el video de tu tienda en decisiones operativas.</strong>
 </p>
 
-<p align="center">
-  <a href="https://retailo-web.onrender.com/#login">Abrir RetaiLO</a>
-  ·
-  <a href="https://retailo-api.onrender.com/docs">Explorar API</a>
-  ·
-  <a href="docs/adr/ADR_001_ESTRUCTURA_REPOSITORIO.md">Arquitectura</a>
-</p>
-
-<p align="center">
-  <a href="https://retailo-web.onrender.com/#login"><img src="https://img.shields.io/badge/demo-web-111111?style=for-the-badge" alt="Demo web"></a>
-  <a href="https://retailo-api.onrender.com/docs"><img src="https://img.shields.io/badge/API-FastAPI-159A9C?style=for-the-badge" alt="Documentación de la API"></a>
-  <a href="docker-compose.yml"><img src="https://img.shields.io/badge/deploy-Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker Compose"></a>
-</p>
-
 ---
+
+<p align="center">
+  <a href="https://retailo-web.onrender.com/#login"><img src="https://img.shields.io/badge/Render-DEMO-ffd152?style=flat&logo=render&logoColor=white" alt="Demo web"></a>
+  <a href="https://retailo-api.onrender.com/docs"><img src="https://img.shields.io/badge/FastAPI-DOCS-909cc2?style=flat&logo=fastapi&logoColor=white" alt="Documentación de la API"></a>
+  <a href="https://platform.ultralytics.com/ultralytics/yolov8"><img src="https://img.shields.io/badge/Ultralytics-YOLOv8-199a70?style=flat&logo=ultralytics&logoColor=white" alt="YOLOv8 Model"></a>
+  <a href="docs/RetaiLO%20Analytics.pdf"><img src="https://img.shields.io/badge/Documentación-PDF-FF5722?style=flat&logo=adobeacrobatreader&logoColor=white" alt="Documentación PDF"></a>
+</p>
 
 ## Qué es RetaiLO
 
 RetaiLO Analytics es una plataforma para tiendas de conveniencia pequeñas y medianas que transforma el video de sus cámaras existentes en información operativa. Detecta personas, mide actividad por zonas y relaciona el tráfico observado con ventas agregadas para encontrar oportunidades concretas dentro de la tienda.
 
-La propuesta es sencilla: que una cámara deje de ser únicamente un dispositivo de grabación y se convierta en una fuente de datos. El procesamiento de visión ocurre localmente en el equipo del cliente; la API recibe resultados agregados y el panel los convierte en analíticas e insights accionables.
+La propuesta es sencilla: que una cámara deje de ser únicamente un dispositivo de grabación y se convierta en una fuente de datos. El procesamiento de visión ocurre localmente en el equipo del cliente y en un futuro, para clientes sin un equipo adecuado, un despliegue en Vultr con GPU; la API recibe resultados agregados y el panel los convierte en analíticas e insights accionables.
 
 RetaiLO no identifica clientes, no usa reconocimiento facial y no asocia una compra con una persona. El sistema trabaja con patrones agregados por zona y periodo.
+
+## Mercado objetivo y oportunidad
+
+El [análisis ejecutivo del proyecto](docs/RetaiLO%20Analytics.pdf) identifica condiciones favorables para explorar esta propuesta en México:
+
+- El comercio al por menor de abarrotes y alimentos registraba 1,113,420 unidades económicas en el DENUE de mayo de 2026.
+- En 2025, 44.7 % de los hogares mexicanos disponía de computadora y 78.3 % tenía conexión a Internet, de acuerdo con las cifras de ENDUTIH citadas en el documento.
+- La expansión de terminales de punto de venta, agregadores y modalidades como *Tap to Phone* muestra una adopción creciente de herramientas digitales entre pequeños comercios.
+
+Estas cifras describen el tamaño y la digitalización potencial del mercado; no sustituyen la validación directa con comerciantes ni una evaluación de compatibilidad, costos y retorno por establecimiento.
 
 ## Demo en línea
 
@@ -38,7 +41,7 @@ RetaiLO no identifica clientes, no usa reconocimiento facial y no asocia una com
 | **API** | [retailo-api.onrender.com](https://retailo-api.onrender.com) | Servicio REST que centraliza autenticación, configuración y resultados. |
 | **OpenAPI / Swagger** | [retailo-api.onrender.com/docs](https://retailo-api.onrender.com/docs) | Contrato interactivo de la API. |
 
-La demo usa un video local incluido en el módulo Vision. El flujo actual permite configurar una tienda, asociar una cámara, dibujar zonas y consultar resultados agregados, tráfico, insights y recomendaciones.
+La demo usa un video local incluido en `vision/data/demo`, lo encontraras aquí: https://www.youtube.com/watch?v=-1bRhYjw1qE. El flujo actual permite configurar una tienda, asociar una cámara, dibujar zonas y consultar resultados agregados, tráfico, insights y recomendaciones.
 
 ## Cómo funciona
 
@@ -76,6 +79,12 @@ El frontend nunca se comunica directamente con YOLO ni con Vision. La API es el 
 - Insights como alto tráfico con bajas ventas y otras combinaciones de tráfico/ventas.
 - Recomendaciones persistentes con estados `pending`, `accepted` y `rejected`.
 - Simulación de ventas por zona sin datos personales.
+
+## Fundamento técnico
+
+La propuesta se apoya en trabajos de analítica para retail que combinan detectores YOLO con herramientas como OpenCV, DeepSORT, ByteTrack o BoT-SORT para producir conteos, trayectorias, mapas de calor, permanencia y métricas por zona. Uno de los estudios revisados analizó 2,847 trayectorias válidas durante 14 días y encontró que zonas equivalentes al 18.5 % del espacio concentraban el 47.3 % del tráfico, un ejemplo de cómo la distribución física puede ocultar concentraciones relevantes de atención.
+
+RetaiLO adopta una versión acotada y orientada a privacidad de ese enfoque: procesa el video localmente cuando es posible, evita reconocimiento facial e identificación personal y transmite a la API resultados agregados. El proyecto permanece en desarrollo; su alcance podrá ajustarse conforme se validen las necesidades de los comercios, la infraestructura disponible y la viabilidad económica.
 
 ## Arquitectura del repositorio
 
@@ -152,6 +161,50 @@ El servicio `vision` está detrás del perfil `edge`, para que la API y el front
 docker compose --profile edge up --build
 ```
 
+### Prueba rápida del flujo demo
+
+La demo procesa el video desde contenedores locales y publica sus resultados en la API desplegada. Desde la raíz del repositorio, ejecuta cada comando por separado:
+
+1. **Ejecutar inferencia de video en la Cámara 1:**
+   ```bash
+   docker compose --profile edge run --rm \
+     -e API_BASE_URL=https://retailo-api.onrender.com \
+     -e CAMERA_ID=1 \
+     vision
+   ```
+
+2. **Ejecutar inferencia de video en la Cámara 3:**
+   ```bash
+   docker compose --profile edge run --rm \
+     -e API_BASE_URL=https://retailo-api.onrender.com \
+     -e CAMERA_ID=3 \
+     vision
+   ```
+
+3. **Cargar datos de ventas simuladas para la Zona 3 (Compra demo exitosa):**
+   ```bash
+   curl -sS -X POST https://retailo-api.onrender.com/stores/1/sales \
+     -H 'Content-Type: application/json' \
+     -d '{
+       "zone_id": 3,
+       "category": "Compra demo exitosa",
+       "units_sold": 60,
+       "revenue": 1800
+     }'
+   ```
+
+4. **Cargar datos de ventas simuladas para la Zona 1 (Compra demo baja):**
+   ```bash
+   curl -sS -X POST https://retailo-api.onrender.com/stores/1/sales \
+     -H 'Content-Type: application/json' \
+     -d '{
+       "zone_id": 1,
+       "category": "Compra demo baja",
+       "units_sold": 2,
+       "revenue": 50
+     }'
+   ```
+
 ### Desarrollo de la API
 
 ```bash
@@ -214,6 +267,7 @@ La configuración de pytest exige una cobertura global mínima del 80 %. Las pru
 
 ## Documentación del proyecto
 
+- [Análisis ejecutivo de RetaiLO Analytics](docs/RetaiLO%20Analytics.pdf)
 - [Estructura y arquitectura modular](docs/adr/ADR_001_ESTRUCTURA_REPOSITORIO.md)
 - [Contrato de la API](docs/adr/ADR_004_API_CONTRACT.md)
 - [Endpoints por dominio](docs/adr/ADR_002_ENDPOINTS.md)
@@ -232,9 +286,7 @@ La configuración de pytest exige una cobertura global mínima del 80 %. Las pru
 
 Las decisiones técnicas relevantes se registran como ADR para conservar el contexto del proyecto.
 
-## Equipo
-
-RetaiLO Analytics fue construido para ayudar a negocios locales a aprovechar la infraestructura de cámaras que ya tienen, con una arquitectura que puede crecer desde una demo reproducible hacia procesamiento en el borde y analítica operativa de producción.
+<br>
 
 <p align="center">
   <strong>RetaiLO Analytics</strong><br>
