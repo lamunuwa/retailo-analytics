@@ -905,7 +905,7 @@ export default function App() {
     navigate("auth");
   };
 
-  if (checkingSession) return <main className="session-loading"><Brand /><i className="spinner" /><span>Validando sesión...</span></main>;
+  if (checkingSession) return <main className="session-loading"><img className="session-loading__logo" src={retailoCameraLogo} alt="RetaiLO" /><i className="spinner" /><span>Validando sesión...</span></main>;
 
   const passwordModal = changingPassword && <PasswordModal onClose={() => setChangingPassword(false)} onSubmit={changeAccountPassword} />;
   if (screen === "auth") return <AuthScreen onAuthenticated={authenticate} />;
