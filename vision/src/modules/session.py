@@ -1,5 +1,5 @@
 from collections.abc import Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from time import monotonic
 
@@ -19,6 +19,7 @@ class VideoSession:
     tracked_people: int
     untracked_detections: int
     visits_by_zone: dict[str, int]
+    dwell_seconds_by_zone: dict[str, float] = field(default_factory=dict)
 
 
 def run_detection(
@@ -33,12 +34,7 @@ def run_detection(
     track_ttl_seconds: float = 300.0,
     clock: Callable[[], float] = monotonic,
 ) -> VideoSession:
-    """Procesa un video y obtiene métricas de tracks vistos recientemente.
-
-    ``track_ttl_seconds`` limita la retención en memoria de los IDs generados
-    por ByteTrack; por tanto, los conteos representan la ventana activa más
-    reciente y no una colección ilimitada desde el arranque del proceso.
-    """
+    """Procesa un video y genera metricas por sesion"""
 
     if track_ttl_seconds <= 0:
         raise ValueError("El TTL de los tracks debe ser mayor que cero")
@@ -83,14 +79,14 @@ def run_detection(
 
         counter.register(frame.people, now=observed_at)
 
-    session = VideoSession(
+    visits_by_zone, dwell_seconds_by_zone = counter.snapshot(clock())
+    return VideoSession(
         started_at=started_at,
         finished_at=datetime.now(UTC),
         processed_frames=processed_frames,
         detected_people=detected_people,
         tracked_people=len(tracked_people_last_seen),
         untracked_detections=untracked_detections,
-        visits_by_zone=counter.counts,
+        visits_by_zone=visits_by_zone,
+        dwell_seconds_by_zone=dwell_seconds_by_zone,
     )
-
-    return session

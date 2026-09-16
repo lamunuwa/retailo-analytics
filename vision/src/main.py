@@ -79,7 +79,8 @@ def main() -> VideoSession:
     print(f"Detecciones sin track: {session.untracked_detections}")
 
     for zone_name, count in session.visits_by_zone.items():
-        print(f"{zone_name}: {count}")
+        dwell = session.dwell_seconds_by_zone.get(zone_name, 0.0)
+        print(f"{zone_name}: {count} visitas, {dwell:.2f}s de permanencia")
 
     elapsed_seconds = max(0.0, (session.finished_at - session.started_at).total_seconds())
     try:
