@@ -13,6 +13,7 @@
   <a href="https://retailo-api.onrender.com/docs"><img src="https://img.shields.io/badge/FastAPI-DOCS-909cc2?style=flat&logo=fastapi&logoColor=white" alt="Documentación de la API"></a>
   <a href="https://platform.ultralytics.com/ultralytics/yolov8"><img src="https://img.shields.io/badge/Ultralytics-YOLOv8-199a70?style=flat&logo=ultralytics&logoColor=white" alt="YOLOv8 Model"></a>
   <a href="docs/RetaiLO%20Analytics.pdf"><img src="https://img.shields.io/badge/Documentación-PDF-FF5722?style=flat&logo=adobeacrobatreader&logoColor=white" alt="Documentación PDF"></a>
+  <a href="https://drive.google.com/drive/folders/1jCnKtZKL8tPkefg97466QjV5325HQe-n?usp=drive_link"><img src="https://img.shields.io/badge/Google_Drive-Recursos-4285F4?style=flat&logo=googledrive&logoColor=white" alt="Google Drive"></a>
 </p>
 
 ## Qué es RetaiLO
