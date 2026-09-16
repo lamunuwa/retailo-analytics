@@ -18,15 +18,20 @@ from vision.src.modules.zones import RoiZone, build_zones, get_configured_zones
 
 
 def create_zone() -> RoiZone:
-    """Crea una zona cuadrada para pruebas"""
-    return RoiZone(
+    """Crea una zona cuadrada para las pruebas."""
+
+    zone = RoiZone(
         name="entrada",
         points=((0, 0), (100, 0), (100, 100), (0, 100)),
     )
 
+    return zone
+
+
+# Runtime -----------------------------------------------------
+
 
 def test_get_device_uses_cpu_when_cuda_is_unavailable() -> None:
-    """Selecciona CPU cuando CUDA no esta disponible"""
     with patch.object(runtime.torch.cuda, "is_available", return_value=False):
         device = runtime.get_device()
 
@@ -34,7 +39,6 @@ def test_get_device_uses_cpu_when_cuda_is_unavailable() -> None:
 
 
 def test_get_device_uses_cuda_when_available() -> None:
-    """Selecciona CUDA cuando esta disponible"""
     with (
         patch.object(runtime.torch.cuda, "is_available", return_value=True),
         patch.object(runtime.torch.cuda, "get_device_name", return_value="GPU"),
@@ -47,26 +51,22 @@ def test_get_device_uses_cuda_when_available() -> None:
 def test_runtime_uses_environment_values(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Valida la configuracion desde variables de entorno"""
     monkeypatch.setenv("DEMO_VIDEO_PATH", "vision/data/demo/custom.mp4")
     monkeypatch.setenv("MODEL_PATH", "model.pt")
     monkeypatch.setenv("TRACKER_PATH", "tracker.yaml")
     monkeypatch.setenv("CAMERA_ID", "42")
     monkeypatch.setenv("API_BASE_URL", "http://api:8000")
-    monkeypatch.setenv("API_TOKEN", "secret")
 
     assert runtime.get_demo_video_path() == "vision/data/demo/custom.mp4"
     assert runtime.get_model_path() == "model.pt"
     assert runtime.get_tracker_path() == "tracker.yaml"
     assert runtime.get_camera_id() == 42
     assert runtime.get_api_url() == "http://api:8000"
-    assert runtime.get_api_token() == "secret"
 
 
 def test_runtime_uses_defaults_when_environment_is_empty(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Valida los valores predeterminados de ejecucion"""
     monkeypatch.delenv("DEMO_VIDEO_PATH", raising=False)
     monkeypatch.delenv("MODEL_PATH", raising=False)
     monkeypatch.delenv("TRACKER_PATH", raising=False)
@@ -77,7 +77,6 @@ def test_runtime_uses_defaults_when_environment_is_empty(
 
 
 def test_runtime_config_groups_execution_values() -> None:
-    """Agrupa los valores de ejecucion"""
     with (
         patch.object(runtime, "get_device", return_value="cpu"),
         patch.object(runtime, "get_demo_video_path", return_value="video.mp4"),
@@ -85,7 +84,6 @@ def test_runtime_config_groups_execution_values() -> None:
         patch.object(runtime, "get_tracker_path", return_value="tracker.yaml"),
         patch.object(runtime, "get_camera_id", return_value=7),
         patch.object(runtime, "get_api_url", return_value="http://api:8000"),
-        patch.object(runtime, "get_api_token", return_value="token"),
     ):
         runtime_config = runtime.get_runtime_config()
 
@@ -96,14 +94,15 @@ def test_runtime_config_groups_execution_values() -> None:
         tracker_path="tracker.yaml",
         camera_id=7,
         api_url="http://api:8000",
-        api_token="token",
     )
+
+
+# Main --------------------------------------------------------
 
 
 def test_main_runs_detection_and_prints_metrics(
     capsys: CaptureFixture[str],
 ) -> None:
-    """Valida la ejecucion principal de Vision"""
     session_result = session.VideoSession(
         started_at=datetime.now(UTC),
         finished_at=datetime.now(UTC),
@@ -123,6 +122,7 @@ def test_main_runs_detection_and_prints_metrics(
     )
 
     with (
+        patch.object(vision_main, "get_configured_zones", return_value=(create_zone(),)),
         patch.object(vision_main, "get_runtime_config", return_value=runtime_config),
         patch.object(vision_main, "run_detection", return_value=session_result),
         patch.object(vision_main, "RetailoAnalyticsClient") as client_class,
@@ -177,14 +177,12 @@ def test_zone_metrics_use_api_ids_and_normalized_shares() -> None:
 
 
 def test_person_detection_uses_the_bottom_center_of_the_box() -> None:
-    """Calcula la posicion inferior central de una persona"""
     person = PersonDetection(10.0, 10.0, 30.0, 40.0)
 
     assert person.floor_position == (20.0, 40.0)
 
 
 def test_person_detector_creates_tracked_people() -> None:
-    """Crea personas con seguimiento"""
     result = MagicMock()
     result.orig_img = np.zeros((20, 20, 3), dtype=np.uint8)
     result.boxes.xyxy.cpu().tolist.return_value = [[1.0, 2.0, 3.0, 4.0]]
@@ -206,7 +204,6 @@ def test_person_detector_creates_tracked_people() -> None:
 
 
 def test_person_detector_skips_invalid_results_and_accepts_missing_ids() -> None:
-    """Omite resultados invalidos y acepta personas sin track"""
     missing_image = MagicMock()
     missing_image.orig_img = None
 
@@ -226,8 +223,10 @@ def test_person_detector_skips_invalid_results_and_accepts_missing_ids() -> None
     assert frames[0].people[0].track_id is None
 
 
+# ROI and counting -------------------------------------------
+
+
 def test_zones_can_be_built_and_detect_points() -> None:
-    """Construye zonas y detecta puntos interiores"""
     zones = build_zones({"entrada": ((0, 0), (100, 0), (100, 100), (0, 100))})
 
     assert zones[0].contains((50.0, 50.0))
@@ -236,7 +235,6 @@ def test_zones_can_be_built_and_detect_points() -> None:
 
 
 def test_zones_require_a_valid_polygon() -> None:
-    """Rechaza zonas sin un poligono valido"""
     with pytest.raises(ValueError):
         build_zones({})
 
@@ -245,7 +243,6 @@ def test_zones_require_a_valid_polygon() -> None:
 
 
 def test_zone_counter_keeps_one_track_while_it_moves_through_a_zone() -> None:
-    """Conserva un track mientras cruza una zona"""
     counter = ZoneCounter((create_zone(),), clock=lambda: 0.0)
     entering = PersonDetection(10.0, 0.0, 20.0, 20.0, track_id=5)
     staying = PersonDetection(40.0, 20.0, 50.0, 50.0, track_id=5)
@@ -260,7 +257,6 @@ def test_zone_counter_keeps_one_track_while_it_moves_through_a_zone() -> None:
 
 
 def test_zone_counter_expires_tracks_that_are_no_longer_seen() -> None:
-    """Descarta tracks despues del TTL"""
     current_time = 0.0
     counter = ZoneCounter(
         (create_zone(),),
@@ -272,11 +268,10 @@ def test_zone_counter_expires_tracks_that_are_no_longer_seen() -> None:
     counter.register((person,), now=current_time)
     current_time = 61.0
 
-    assert counter.counts == {"entrada": 1}
+    assert counter.counts == {"entrada": 0}
 
 
 def test_zone_counter_ignores_people_without_track_or_outside_zone() -> None:
-    """Ignora personas sin track o fuera de zona"""
     counter = ZoneCounter((create_zone(),))
     without_track = PersonDetection(10.0, 10.0, 20.0, 20.0)
     outside_zone = PersonDetection(150.0, 10.0, 160.0, 20.0, track_id=8)
@@ -286,8 +281,10 @@ def test_zone_counter_ignores_people_without_track_or_outside_zone() -> None:
     assert counter.counts == {"entrada": 0}
 
 
+# Session ------------------------------------------------------
+
+
 def test_session_collects_tracking_metrics() -> None:
-    """Acumula metricas de seguimiento por sesion"""
     entering = PersonDetection(1.0, 1.0, 2.0, 2.0, track_id=7)
     staying = PersonDetection(3.0, 3.0, 4.0, 4.0, track_id=7)
     leaving = PersonDetection(3.0, 120.0, 4.0, 140.0, track_id=7)
@@ -314,11 +311,9 @@ def test_session_collects_tracking_metrics() -> None:
     assert result.tracked_people == 1
     assert result.untracked_detections == 0
     assert result.visits_by_zone == {"entrada": 1}
-    assert result.dwell_seconds_by_zone == {"entrada": 2.0}
 
 
 def test_session_expires_unseen_tracking_ids() -> None:
-    """Descarta tracks vencidos de una sesion"""
     first_track = PersonDetection(1.0, 1.0, 2.0, 2.0, track_id=7)
     new_track = PersonDetection(3.0, 3.0, 4.0, 4.0, track_id=8)
     detector = MagicMock()

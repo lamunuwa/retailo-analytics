@@ -20,8 +20,6 @@
 *.onnx
 *.mp4
 *.avi
-!yolov8n.pt
-!vision/data/demo/supermarket.mp4
 
 # Entorno Virtual y Caché de Python
 .venv/

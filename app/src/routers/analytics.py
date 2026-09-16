@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Annotated, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -21,20 +21,16 @@ router = APIRouter(prefix="/analytics", tags=["Analytics"])
 def get_analytics_service(
     db: Annotated[Session, Depends(get_db)],
 ) -> AnalyticsService:
-    """Construye el servicio de analitica"""
+    """Inyección de dependencias para el servicio de analítica."""
     return AnalyticsService(AnalyticsRepository(db))
 
 
 def _to_response(event: DetectionEvent) -> DetectionEventResponse:
-    """Convierte una deteccion a su respuesta"""
-    timestamp = cast(datetime, event.timestamp)
-    if timestamp.tzinfo is None:
-        timestamp = timestamp.replace(tzinfo=UTC)
     return DetectionEventResponse(
         camera_id=cast(int, event.camera_id),
         zone_name=cast(str, event.zone_name),
         people_count=cast(int, event.people_count),
-        timestamp=timestamp,
+        timestamp=cast(datetime, event.timestamp),
         status="received",
     )
 
@@ -48,7 +44,7 @@ def ingest_detection(
     event: DetectionEventCreate,
     service: Annotated[AnalyticsService, Depends(get_analytics_service)],
 ) -> DetectionEventResponse:
-    """Crea un evento de deteccion"""
+    """Recibe y persiste un evento de detección."""
     return _to_response(service.register_detection(event))
 
 
@@ -62,7 +58,7 @@ def get_detections(
     limit: Annotated[int, Query(ge=1, le=1000)] = 100,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> Sequence[DetectionEventResponse]:
-    """Obtiene detecciones con filtros opcionales"""
+    """Lista eventos con filtros opcionales y paginación."""
     if start_date is not None and end_date is not None and start_date > end_date:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

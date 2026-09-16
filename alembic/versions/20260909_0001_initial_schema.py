@@ -1,11 +1,17 @@
-"""Crea el esquema inicial de la API"""
+"""Create the initial Retailo API schema.
+
+Revision ID: 20260909_0001
+Revises:
+Create Date: 2026-09-09 00:00:00
+"""
 
 from collections.abc import Sequence
 
+from alembic import op
 import sqlalchemy as sa
 
-from alembic import op
 
+# revision identifiers, used by Alembic.
 revision: str = "20260909_0001"
 down_revision: str | Sequence[str] | None = None
 branch_labels: str | Sequence[str] | None = None
@@ -13,7 +19,6 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    """Crea las tablas iniciales"""
     op.create_table(
         "stores",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -27,8 +32,8 @@ def upgrade() -> None:
         sa.Column("camera_id", sa.Integer(), nullable=False),
         sa.Column("zone_name", sa.String(), nullable=False),
         sa.Column("people_count", sa.Integer(), nullable=False),
-        sa.Column("timestamp", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("timestamp", sa.DateTime(), nullable=False),
+        sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_detection_events_camera_id", "detection_events", ["camera_id"])
@@ -48,7 +53,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """Elimina las tablas iniciales"""
     op.drop_table("cameras")
     op.drop_index("ix_detection_events_id", table_name="detection_events")
     op.drop_index("ix_detection_events_camera_id", table_name="detection_events")
