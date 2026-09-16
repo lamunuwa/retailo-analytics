@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal, cast
 
 import requests
 
@@ -94,7 +94,7 @@ class RetailoAnalyticsClient:
             "zone_metrics": zone_metrics,
         }
         try:
-            response = requests.post(url, json=payload, timeout=10)
+            response = requests.post(url, json=cast(Any, payload), timeout=10)
             response.raise_for_status()
         except requests.exceptions.RequestException as error:
             raise APIClientError(

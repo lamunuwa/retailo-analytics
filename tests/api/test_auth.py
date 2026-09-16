@@ -1,4 +1,5 @@
 from collections.abc import Iterator
+from typing import cast
 
 import pytest
 from fastapi.testclient import TestClient
@@ -44,7 +45,7 @@ def register_user(client: TestClient) -> dict[str, object]:
         },
     )
     assert response.status_code == 201
-    return response.json()
+    return cast(dict[str, object], response.json())
 
 
 def test_register_normalizes_email_and_returns_session(client: TestClient) -> None:
